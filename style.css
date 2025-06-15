@@ -59,19 +59,11 @@ header h1 { margin: 0; font-size: 2.5rem; }
     cursor: pointer;
     transition: background-color 0.2s;
 }
-.reset-button:hover {
-    background-color: #ffca2c;
-}
+.reset-button:hover { background-color: #ffca2c; }
 
 @media (max-width: 600px) {
-    .reset-button {
-        position: static;
-        margin-top: 1rem;
-        display: inline-block;
-        width: auto;
-    }
+    .reset-button { position: static; margin-top: 1rem; display: inline-block; width: auto; }
 }
-
 
 .card {
     background-color: var(--card-bg);
@@ -86,12 +78,9 @@ header h1 { margin: 0; font-size: 2.5rem; }
 .description { font-size: 0.9rem; margin-bottom: 1.5rem; flex-grow: 1; }
 .input-group { margin-bottom: 1.5rem; }
 .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 700; }
-.input-with-unit { display: flex; align-items: center; }
-.input-with-unit input { width: 80px; }
-.input-with-unit span { margin-left: 0.5rem; font-weight: 700; }
 
 input[type="range"] { width: 100%; cursor: pointer; }
-input[type="number"], select {
+select {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid #ccc;
@@ -112,6 +101,7 @@ input[type="number"], select {
     font-weight: 700;
     transition: all 0.2s ease-in-out;
     text-align: center;
+    min-width: 60px;
 }
 .button-group button.active, .button-row button.active {
     background-color: var(--primary-color);
@@ -121,8 +111,6 @@ input[type="number"], select {
 .result { margin-top: auto; padding-top: 1rem; border-top: 1px solid #eee; }
 .result p { margin: 0 0 0.5rem 0; font-weight: 700; }
 .cost-display {
-    font-size: 1.5rem;
-    font-weight: 700;
     min-height: 6.5rem;
     display: flex;
     flex-direction: column;
@@ -130,11 +118,13 @@ input[type="number"], select {
     line-height: 1.4;
 }
 
+.main-value { font-size: 1.6rem; font-weight: 700; }
+.sub-value { font-size: 1rem; font-weight: 400; display: block; margin-top: 0.25rem; }
+
 .text-success { color: var(--success-color); }
 .text-danger { color: var(--danger-color); }
 .text-neutral { color: var(--neutral-color); }
 
-.small-info { font-size: 1.1rem; font-weight: 400; display: block; }
 hr.separator { border: none; border-top: 1px solid #eee; margin: 0.5rem 0; }
 
 footer {
