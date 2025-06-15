@@ -125,9 +125,9 @@ input[type="range"] { width: 100%; cursor: pointer; }
     font-weight: 700;
 }
 .difference {
-    font-size: 1.1rem;
+    font-size: 1rem; /* Angepasst für längeren Text */
     font-weight: 700;
-    margin-left: 0.75rem;
+    margin-left: 0.5rem;
 }
 .sub-value { font-size: 1rem; font-weight: 400; display: block; margin-top: 0.25rem; }
 
