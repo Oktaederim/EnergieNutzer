@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
             coolingLoad: 3,
             coolingTemp: 24,
             absenceDays: 0,
-            absenceSetbackTemp: 15,
+            absenceTargetTemp: 15,
             pc: 0,
             laptop: 0,
             monitor: 0,
@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const coolingResultDiv = document.getElementById('coolingResult');
     const absenceOfficeSizeSelector = document.getElementById('absence-office-size-selector');
     const daySelector = document.getElementById('day-selector');
-    const absenceSetbackTempSlider = document.getElementById('absenceSetbackTemp');
-    const absenceSetbackTempValue = document.getElementById('absenceSetbackTempValue');
+    const absenceTargetTempSlider = document.getElementById('absenceTargetTemp');
+    const absenceTargetTempValue = document.getElementById('absenceTargetTempValue');
     const absenceResultDiv = document.getElementById('absenceResult');
     const pcQuantitySelector = document.getElementById('pc-quantity-selector');
     const laptopQuantitySelector = document.getElementById('laptop-quantity-selector');
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const kwhDifference = kwhForSelectedTemp - kwhForBaseTemp;
             const costDifference = kwhDifference * config.electricityCostPerKwh;
             const co2Difference = kwhDifference * config.co2FactorStrom;
-            const percentage = (kwhDifference / kwhForBaseTemp) * 100;
+            const percentage = kwhForBaseTemp !== 0 ? (kwhDifference / kwhForBaseTemp) * 100 : 0;
             const sign = costDifference > 0 ? '+' : '';
             const diffClass = costDifference > 0 ? 'text-danger' : 'text-success';
             diffHtml = `<span class="difference ${diffClass}">(${sign}${formatCurrency(costDifference)} / ${sign}${co2Difference.toFixed(0)} kg / ${sign}${percentage.toFixed(1)}%)</span>`;
@@ -121,17 +121,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateAbsence() {
         const days = parseInt(daySelector.querySelector('.active').dataset.days);
         const size = parseInt(absenceOfficeSizeSelector.querySelector('.active').dataset.size);
-        const setbackTemp = parseInt(absenceSetbackTempSlider.value);
-        absenceSetbackTempValue.textContent = setbackTemp;
+        const targetTemp = parseInt(absenceTargetTempSlider.value);
+        absenceTargetTempValue.textContent = targetTemp;
 
         if (days === 0) {
             absenceResultDiv.innerHTML = '<span class="text-neutral">Keine Abwesenheitstage ausgewählt.</span>';
             return;
         }
 
-        const tempDifference = 20 - setbackTemp;
-        if (tempDifference <= 0) {
-            absenceResultDiv.innerHTML = '<span class="text-neutral">Absenktemperatur muss unter 20°C sein.</span>';
+        const tempDifference = 20 - targetTemp;
+        if (tempDifference < 0) { // Sollte durch Slider-min nicht passieren, aber sicher ist sicher
+             absenceResultDiv.innerHTML = '<span class="text-neutral">Absenkung nicht möglich.</span>';
+            return;
+        }
+        if (tempDifference === 0) {
+            absenceResultDiv.innerHTML = '<span class="text-neutral">Keine Absenkung, keine Ersparnis.</span>';
             return;
         }
 
@@ -158,19 +162,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const getYearlyKwh = (onlyStandby) => {
+        const getYearlyKwh = (isStandby) => {
             let totalWh = 0;
             const dailyHours = { work: 9, night: 15 };
             for (const device in quantities) {
                 const qty = quantities[device];
                 if (qty > 0) {
                     const power = devicePower[device];
-                    let wh = (dailyHours.work * power.on); // Betriebskosten sind immer da
-                    if(onlyStandby) {
-                        wh += (dailyHours.night * power.standby); // Standby-Kosten
-                    } else {
-                        wh += (dailyHours.night * power.off); // "Aus"-Kosten
-                    }
+                    let wh = (dailyHours.work * power.on);
+                    wh += (dailyHours.night * (isStandby ? power.standby : power.off));
                     totalWh += wh * qty;
                 }
             }
@@ -191,7 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else { // standby_only
             const costSaving = costStandby - costShutdown;
             const co2Saving = co2Standby - co2Shutdown;
-            displayHtml = `<div><span class="main-value text-danger">${formatCurrency(costStandby)}</span><span class="sub-value">CO₂: ${co2Standby.toFixed(0)} kg / Jahr</span></div><div class="text-success sub-value" style="margin-top:0.5rem">Ersparnis durch Abschalten: ${formatCurrency(costSaving)} / ${co2Saving.toFixed(0)} kg CO₂</div>`;
+            const percentageSaving = costStandby > 0 ? (costSaving / costStandby) * 100 : 0;
+            displayHtml = `<div><span class="main-value text-danger">${formatCurrency(costStandby)}</span><span class="sub-value">CO₂: ${co2Standby.toFixed(0)} kg / Jahr</span></div><div class="text-success sub-value" style="margin-top:0.5rem">Ersparnis durch Abschalten: ${formatCurrency(costSaving)} / ${co2Saving.toFixed(0)} kg CO₂ (${percentageSaving.toFixed(0)}%)</div>`;
         }
         standbyResultDiv.innerHTML = displayHtml;
     }
@@ -208,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coolingTempSlider.value = config.defaults.coolingTemp;
         
         setActiveButton(daySelector, 'days', config.defaults.absenceDays);
-        absenceSetbackTempSlider.value = config.defaults.absenceSetbackTemp;
+        absenceTargetTempSlider.value = config.defaults.absenceTargetTemp;
         
         setActiveButton(pcQuantitySelector, 'quantity', config.defaults.pc);
         setActiveButton(laptopQuantitySelector, 'quantity', config.defaults.laptop);
@@ -228,8 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT LISTENERS ---
     resetBtn.addEventListener('click', resetToDefaults);
     
-    const sizeSelectors = [heatingOfficeSizeSelector, absenceOfficeSizeSelector];
-    sizeSelectors.forEach(selector => {
+    [heatingOfficeSizeSelector, absenceOfficeSizeSelector].forEach(selector => {
         selector.addEventListener('click', (e) => {
             if (e.target.classList.contains('size-btn')) {
                 syncOfficeSizeSelectors(e.target.dataset.size);
@@ -248,10 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
             calculateAbsence();
         }
     });
-    absenceSetbackTempSlider.addEventListener('input', calculateAbsence);
+    absenceTargetTempSlider.addEventListener('input', calculateAbsence);
     
-    const quantitySelectors = [pcQuantitySelector, laptopQuantitySelector, monitorQuantitySelector];
-    quantitySelectors.forEach(selector => {
+    [pcQuantitySelector, laptopQuantitySelector, monitorQuantitySelector].forEach(selector => {
         selector.addEventListener('click', (e) => {
             if (e.target.classList.contains('quantity-btn')) {
                 setActiveButton(selector, 'quantity', e.target.dataset.quantity);
