@@ -5,13 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
         heatingCostPerKwh: 0.12, 
         electricityCostPerKwh: 0.35,
         heatingSavingPerDegree: 0.06, 
-        baseHeatingTemp: 20,
-        baseCoolingTemp: 24,
-        coolingEER: 3.0,
         workDaysPerYear: 220,
+        // NEU: TU-Dortmund Standardwerte
+        defaults: {
+            heatingTemp: 20,
+            coolingTemp: 24,
+            absenceDays: 2,
+            device: 'laptop_monitor',
+            behavior: 'shutdown_evening'
+        }
     };
-
-    // NEU: Konstanten für Standby-Verbrauch
+    
     const devicePower = {
         pc_2_monitors:  { on: 150, standby: 5, off: 1 },
         pc_1_monitor:   { on: 110, standby: 4, off: 1 },
@@ -19,7 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
         laptop:         { on: 45,  standby: 2, off: 0.5 }
     };
 
-    // --- DOM-ELEMENTE AUSWÄHLEN ---
+    // --- DOM-ELEMENTE ---
+    const resetBtn = document.getElementById('resetBtn');
     // Modul 1
     const heatingTempSlider = document.getElementById('heatingTemp');
     const heatingTempValue = document.getElementById('heatingTempValue');
@@ -41,65 +46,59 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- BERECHNUNGSFUNKTIONEN ---
 
     function calculateHeating() {
-        // Diese Funktion bleibt unverändert
         const temp = parseFloat(heatingTempSlider.value);
+        heatingTempValue.textContent = temp.toFixed(1);
+        
+        // NEU: Neutrale Anzeige bei Standardwert
+        if (temp === config.defaults.heatingTemp) {
+            heatingResultDiv.innerHTML = `<span class="text-neutral">Dies ist die TU-Vorgabe.</span>`;
+            return;
+        }
+
         const size = parseInt(officeSizeSelect.value);
         const baseYearlyKwh = size * 70;
         const baseCost = baseYearlyKwh * config.heatingCostPerKwh;
-        const tempDifference = temp - config.baseHeatingTemp;
+        const tempDifference = temp - config.defaults.heatingTemp;
         const costDifference = baseCost * tempDifference * config.heatingSavingPerDegree;
-
-        heatingTempValue.textContent = temp.toFixed(1);
 
         if (costDifference > 0.01) {
             heatingResultDiv.innerHTML = `<span class="text-danger">Mehrkosten: +${formatCurrency(costDifference)} / Jahr</span>`;
         } else if (costDifference < -0.01) {
             heatingResultDiv.innerHTML = `<span class="text-success">Ersparnis: ${formatCurrency(Math.abs(costDifference))} / Jahr</span>`;
-        } else {
-            heatingResultDiv.innerHTML = '<span>Keine wesentliche Abweichung</span>';
         }
     }
 
     function calculateCooling() {
-        // Diese Funktion bleibt unverändert
-        const load = parseFloat(coolingLoadInput.value);
         const selectedTemp = parseInt(coolingTempSlider.value);
         coolingTempValue.textContent = selectedTemp;
 
-        if (isNaN(load) || load <= 0) {
-            coolingResultDiv.innerHTML = '<span>Bitte gültige Wärmelast > 0 angeben.</span>';
+        // NEU: Neutrale Anzeige bei Standardwert
+        if (selectedTemp === config.defaults.coolingTemp) {
+            const costForBaseTemp = getCoolingCost(config.defaults.coolingTemp);
+            coolingResultDiv.innerHTML = `
+                <span class="text-neutral">Kosten (Referenz): ${formatCurrency(costForBaseTemp)} / Jahr</span>
+                <span class="small-info">Dies ist die aktuelle ITMC-Vorgabe.</span>`;
             return;
         }
 
-        const getYearlyCost = (temp) => {
-            const tempFactor = 1 + (config.baseCoolingTemp - temp) * 0.1;
-            const kwhPerHour = (load / config.coolingEER) * tempFactor;
-            const costPerDay = kwhPerHour * 10;
-            return costPerDay * config.workDaysPerYear;
-        };
-
-        const costForSelectedTemp = getYearlyCost(selectedTemp);
-        const costForBaseTemp = getYearlyCost(config.baseCoolingTemp);
+        const costForSelectedTemp = getCoolingCost(selectedTemp);
+        const costForBaseTemp = getCoolingCost(config.defaults.coolingTemp);
         let displayHtml = '';
 
-        if (selectedTemp < config.baseCoolingTemp) {
+        if (selectedTemp < config.defaults.coolingTemp) {
             const potentialSaving = costForSelectedTemp - costForBaseTemp;
             displayHtml = `
                 <span class="text-danger">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span>
-                <span class="small-info text-success">Mögliche Ersparnis: +${formatCurrency(potentialSaving)} / Jahr (bei ${config.baseCoolingTemp}°C)</span>`;
-        } else if (selectedTemp > config.baseCoolingTemp) {
+                <span class="small-info text-success">Mögliche Ersparnis: +${formatCurrency(potentialSaving)} / Jahr (bei ${config.defaults.coolingTemp}°C)</span>`;
+        } else { // selectedTemp > config.defaults.coolingTemp
             const realizedSaving = costForBaseTemp - costForSelectedTemp;
             displayHtml = `
                 <span class="text-success">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span>
-                <span class="small-info text-success">Ihre Ersparnis: ${formatCurrency(realizedSaving)} / Jahr (ggü. ${config.baseCoolingTemp}°C)</span>`;
-        } else {
-            displayHtml = `
-                <span class="text-neutral">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span>
-                <span class="small-info">Dies ist die empfohlene Referenz-Temperatur.</span>`;
+                <span class="small-info text-success">Ihre Ersparnis: ${formatCurrency(realizedSaving)} / Jahr (ggü. ${config.defaults.coolingTemp}°C)</span>`;
         }
         coolingResultDiv.innerHTML = displayHtml;
     }
-    
+
     function calculateAbsence() {
         const activeBtn = daySelector.querySelector('.active');
         if (!activeBtn) return;
@@ -108,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const size = parseInt(officeSizeSelect.value);
 
         if (days === 0) {
-            absenceResultDiv.innerHTML = '<span>Bitte Tage auswählen.</span>';
+            absenceResultDiv.innerHTML = '<span>Keine Abwesenheitstage ausgewählt.</span>';
             return;
         }
 
@@ -131,25 +130,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateStandby() {
         const device = deviceSetupSelect.value;
         const behavior = shutdownBehaviorGroup.querySelector('.active').dataset.behavior;
-        const power = devicePower[device];
+        
+        const costForBehavior = getStandbyCost(device, behavior);
 
-        // Stunden pro Tag: 8h Arbeit, 1h Pause, 15h "Nacht"
-        const dailyHours = { work: 8, pause: 1, night: 15 };
-
-        const getConsumptionKwh = (b) => {
-            let wh = 0;
-            if (b === 'standby_only') {
-                wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.standby);
-            } else if (b === 'shutdown_evening') {
-                wh = (dailyHours.work * power.on) + (dailyHours.pause * power.standby) + (dailyHours.night * power.off);
-            } else { // shutdown_breaks
-                wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.off);
-            }
-            return (wh / 1000) * config.workDaysPerYear; // kWh pro Jahr
-        };
-
-        const costForBehavior = getConsumptionKwh(behavior) * config.electricityCostPerKwh;
-        const costForBestBehavior = getConsumptionKwh('shutdown_breaks') * config.electricityCostPerKwh;
+        // NEU: Neutrale Anzeige bei Standardverhalten
+        if(behavior === config.defaults.behavior) {
+            standbyResultDiv.innerHTML = `
+                <span class="small-info text-neutral">Jährl. Kosten (Standard): <b>${formatCurrency(costForBehavior)}</b></span>
+                 <span class="small-info">Vergleichen Sie mit anderen Verhaltensweisen.</span>`;
+            return;
+        }
+        
+        const costForBestBehavior = getStandbyCost(device, 'shutdown_breaks');
         const potentialSaving = costForBehavior - costForBestBehavior;
         
         standbyResultDiv.innerHTML = `
@@ -160,47 +152,82 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- HILFSFUNKTIONEN ---
+    function getCoolingCost(temp) {
+        const load = parseFloat(coolingLoadInput.value) || 3;
+        const tempFactor = 1 + (config.defaults.coolingTemp - temp) * 0.1;
+        const kwhPerHour = (load / config.coolingEER) * tempFactor;
+        const costPerDay = kwhPerHour * 10;
+        return costPerDay * config.workDaysPerYear;
+    }
+    
+    function getStandbyCost(device, behavior) {
+        const power = devicePower[device];
+        const dailyHours = { work: 8, pause: 1, night: 15 };
+        let wh = 0;
+        if (behavior === 'standby_only') {
+            wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.standby);
+        } else if (behavior === 'shutdown_evening') {
+            wh = (dailyHours.work * power.on) + (dailyHours.pause * power.standby) + (dailyHours.night * power.off);
+        } else { // shutdown_breaks
+            wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.off);
+        }
+        const yearlyKwh = (wh / 1000) * config.workDaysPerYear;
+        return yearlyKwh * config.electricityCostPerKwh;
+    }
+
     function formatCurrency(value) {
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
     }
 
-    // --- EVENT LISTENERS ---
-    // Module 1 & 3
-    officeSizeSelect.addEventListener('input', () => {
-        calculateHeating();
-        calculateAbsence();
-    });
-    heatingTempSlider.addEventListener('input', calculateHeating);
+    function setActiveButton(groupElement, dataAttribute, value) {
+        const buttons = groupElement.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset[dataAttribute] == value) {
+                btn.classList.add('active');
+            }
+        });
+    }
 
-    // Modul 2
-    coolingLoadInput.addEventListener('input', calculateCooling);
-    coolingTempSlider.addEventListener('input', calculateCooling);
-    
-    // Modul 3
-    daySelector.addEventListener('click', (e) => {
-        if (e.target.classList.contains('day-btn')) {
-            daySelector.querySelector('.active').classList.remove('active');
-            e.target.classList.add('active');
-            calculateAbsence();
-        }
-    });
+    // --- STEUERUNGSFUNKTIONEN ---
+    function resetToDefaults() {
+        heatingTempSlider.value = config.defaults.heatingTemp;
+        coolingTempSlider.value = config.defaults.coolingTemp;
+        deviceSetupSelect.value = config.defaults.device;
+        
+        setActiveButton(daySelector, 'days', config.defaults.absenceDays);
+        setActiveButton(shutdownBehaviorGroup, 'behavior', config.defaults.behavior);
 
-    // Modul 4
-    deviceSetupSelect.addEventListener('input', calculateStandby);
-    shutdownBehaviorGroup.addEventListener('click', (e) => {
-        if (e.target.classList.contains('behavior-btn')) {
-            shutdownBehaviorGroup.querySelector('.active').classList.remove('active');
-            e.target.classList.add('active');
-            calculateStandby();
-        }
-    });
+        runAllCalculations();
+    }
 
-    // --- INITIALISIERUNG ---
-    function init() {
+    function runAllCalculations() {
         calculateHeating();
         calculateCooling();
         calculateAbsence();
         calculateStandby();
     }
-    init();
+
+    // --- EVENT LISTENERS ---
+    resetBtn.addEventListener('click', resetToDefaults);
+    officeSizeSelect.addEventListener('input', () => { calculateHeating(); calculateAbsence(); });
+    heatingTempSlider.addEventListener('input', calculateHeating);
+    coolingLoadInput.addEventListener('input', calculateCooling);
+    coolingTempSlider.addEventListener('input', calculateCooling);
+    daySelector.addEventListener('click', (e) => {
+        if (e.target.classList.contains('day-btn')) {
+            setActiveButton(daySelector, 'days', e.target.dataset.days);
+            calculateAbsence();
+        }
+    });
+    deviceSetupSelect.addEventListener('input', calculateStandby);
+    shutdownBehaviorGroup.addEventListener('click', (e) => {
+        if (e.target.classList.contains('behavior-btn')) {
+            setActiveButton(shutdownBehaviorGroup, 'behavior', e.target.dataset.behavior);
+            calculateStandby();
+        }
+    });
+
+    // --- INITIALISIERUNG ---
+    resetToDefaults();
 });
