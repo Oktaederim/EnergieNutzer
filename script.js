@@ -12,19 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- DOM-ELEMENTE AUSWÄHLEN ---
-    // Modul 1: Heizen
     const heatingTempSlider = document.getElementById('heatingTemp');
     const heatingTempValue = document.getElementById('heatingTempValue');
     const officeSizeSelect = document.getElementById('officeSize');
     const heatingResultDiv = document.getElementById('heatingResult');
 
-    // Modul 2: Kühlen
     const coolingLoadInput = document.getElementById('coolingLoad');
     const coolingTempSlider = document.getElementById('coolingTemp');
     const coolingTempValue = document.getElementById('coolingTempValue');
     const coolingResultDiv = document.getElementById('coolingResult');
 
-    // Modul 3: Homeoffice
     const homeofficeDaysSlider = document.getElementById('homeofficeDays');
     const homeofficeDaysValue = document.getElementById('homeofficeDaysValue');
     const heatingOnBtn = document.getElementById('heatingOnBtn');
@@ -38,8 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateHeating() {
         const temp = parseFloat(heatingTempSlider.value);
         const size = parseInt(officeSizeSelect.value);
-
-        const baseYearlyKwh = size * 70; // Annahme: 70 kWh/m²/Jahr
+        const baseYearlyKwh = size * 70;
         const baseCost = baseYearlyKwh * config.heatingCostPerKwh;
         const tempDifference = temp - config.baseHeatingTemp;
         const costDifference = baseCost * tempDifference * config.heatingSavingPerDegree;
@@ -47,32 +43,52 @@ document.addEventListener('DOMContentLoaded', () => {
         heatingTempValue.textContent = temp.toFixed(1);
 
         if (costDifference > 0.01) {
-            heatingResultDiv.innerHTML = `Mehrkosten: <span class="text-danger">+${formatCurrency(costDifference)} / Jahr</span>`;
+            heatingResultDiv.innerHTML = `<span class="text-danger">Mehrkosten: +${formatCurrency(costDifference)} / Jahr</span>`;
         } else if (costDifference < -0.01) {
-            // KORREKTUR: Zeige Ersparnis als positive Zahl an, indem der negative Wert umgekehrt wird.
-            heatingResultDiv.innerHTML = `Ersparnis: <span class="text-success">${formatCurrency(Math.abs(costDifference))} / Jahr</span>`;
+            heatingResultDiv.innerHTML = `<span class="text-success">Ersparnis: ${formatCurrency(Math.abs(costDifference))} / Jahr</span>`;
         } else {
-            heatingResultDiv.innerHTML = 'Keine wesentliche Abweichung';
+            heatingResultDiv.innerHTML = '<span>Keine wesentliche Abweichung</span>';
         }
     }
 
+    // ### KOMPLETT ÜBERARBEITETE FUNKTION FÜR DIE KÜHLUNG ###
     function calculateCooling() {
         const load = parseFloat(coolingLoadInput.value);
-        const temp = parseInt(coolingTempSlider.value);
+        const selectedTemp = parseInt(coolingTempSlider.value);
 
         if (isNaN(load) || load <= 0) {
-            coolingResultDiv.innerHTML = 'Bitte gültige Wärmelast > 0 angeben.';
+            coolingResultDiv.innerHTML = '<span>Bitte gültige Wärmelast > 0 angeben.</span>';
             return;
         }
 
-        const tempFactor = 1 + (config.baseCoolingTemp - temp) * 0.1; // 10% mehr Energie pro Grad unter 24°C
-        const kwhPerHour = (load / config.coolingEER) * tempFactor;
-        const costPerHour = kwhPerHour * config.electricityCostPerKwh;
-        const costPerDay = costPerHour * 10; // Annahme 10h Laufzeit/Tag
-        const costPerYear = costPerDay * config.workDaysPerYear;
+        // Funktion zur Berechnung der Jahreskosten für eine gegebene Temperatur
+        const getYearlyCost = (temp) => {
+            const tempFactor = 1 + (config.baseCoolingTemp - temp) * 0.1; // 10% mehr Energie pro Grad unter 24°C
+            const kwhPerHour = (load / config.coolingEER) * tempFactor;
+            const costPerDay = kwhPerHour * 10; // Annahme 10h Laufzeit/Tag
+            return costPerDay * config.workDaysPerYear;
+        };
 
-        coolingTempValue.textContent = temp;
-        coolingResultDiv.innerHTML = `<span class="text-danger">${formatCurrency(costPerDay)} / Tag</span> <br> <small>(${formatCurrency(costPerYear)} / Jahr)</small>`;
+        const costForSelectedTemp = getYearlyCost(selectedTemp);
+        const costForBaseTemp = getYearlyCost(config.baseCoolingTemp);
+        
+        let displayHtml = `<span class="text-danger">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span>`;
+
+        // Zeige die mögliche Ersparnis an, wenn kälter als die Basis-Temperatur gekühlt wird
+        if (selectedTemp < config.baseCoolingTemp) {
+            const potentialSaving = costForSelectedTemp - costForBaseTemp;
+            if (potentialSaving > 0) {
+                displayHtml += `<span class="small-info text-success">Mögliche Ersparnis: +${formatCurrency(potentialSaving)} / Jahr (bei ${config.baseCoolingTemp}°C)</span>`;
+            }
+        } 
+        // Zeige die realisierte Ersparnis an, wenn wärmer als die Basis-Temperatur gekühlt wird
+        else if (selectedTemp > config.baseCoolingTemp) {
+             const realizedSaving = getYearlyCost(selectedTemp - 1) - costForSelectedTemp; // Ersparnis pro Grad
+             displayHtml = `<span class="text-success">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span><span class="small-info text-success">Sie sparen bereits Geld!</span>`;
+        }
+
+        coolingTempValue.textContent = selectedTemp;
+        coolingResultDiv.innerHTML = displayHtml;
     }
 
     function calculateHomeOffice() {
@@ -82,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         homeofficeDaysValue.textContent = days;
 
         if (days === 0) {
-            homeofficeResultDiv.innerHTML = 'Keine Tage im Homeoffice ausgewählt.';
+            homeofficeResultDiv.innerHTML = '<span>Keine Tage im Homeoffice ausgewählt.</span>';
             heatingOnBtn.classList.add('active');
             heatingOffBtn.classList.remove('active');
             isHeatingReduced = false;
@@ -91,14 +107,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const baseKwhPerDay = (size * 70) / config.workDaysPerYear;
         const costPerDayFull = baseKwhPerDay * config.heatingCostPerKwh;
-        const costPerDayReduced = costPerDayFull * (1 - ((21 - 16) * config.heatingSavingPerDegree)); // Absenkung von 21 auf 16 Grad
+        const costPerDayReduced = costPerDayFull * (1 - ((21 - 16) * config.heatingSavingPerDegree));
         const dailySavings = costPerDayFull - costPerDayReduced;
-        const yearlySavings = dailySavings * days * 52; // 52 Wochen/Jahr
+        const yearlySavings = dailySavings * days * 52;
 
         if (isHeatingReduced) {
-            homeofficeResultDiv.innerHTML = `Ersparnis: <span class="text-success">+${formatCurrency(yearlySavings)} / Jahr</span>`;
+            homeofficeResultDiv.innerHTML = `<span class="text-success">Ersparnis: +${formatCurrency(yearlySavings)} / Jahr</span>`;
         } else {
-            homeofficeResultDiv.innerHTML = `Mögliche Ersparnis: <span class="text-danger">${formatCurrency(yearlySavings)} / Jahr</span> <br><small>(Klicken Sie auf "Heizung abgesenkt")</small>`;
+            homeofficeResultDiv.innerHTML = `<span>Mögliche Ersparnis:</span><span class="small-info text-danger">${formatCurrency(yearlySavings)} / Jahr (durch Absenkung)</span>`;
         }
     }
 
@@ -108,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- EVENT LISTENERS ---
-    // Stellt sicher, dass alle Elemente existieren, bevor Listener hinzugefügt werden
     if (heatingTempSlider) heatingTempSlider.addEventListener('input', calculateHeating);
     if (officeSizeSelect) officeSizeSelect.addEventListener('input', () => {
         calculateHeating();
