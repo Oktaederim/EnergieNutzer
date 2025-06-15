@@ -64,7 +64,7 @@
 
         <section class="card">
             <h2>🏢 Potenzial bei Abwesenheit</h2>
-            <p class="description">An leeren Bürotagen (z.B. durch Homeoffice) die Heizung abzusenken, spart Energie. Wählen Sie die Absenktemperatur.</p>
+            <p class="description">An leeren Bürotagen die Heizung abzusenken, spart Energie. Vergleichen Sie die Ersparnis mit der normalen Raumtemperatur von 20°C.</p>
 
             <div class="input-group">
                 <label>Für welche Bürogröße?</label>
@@ -88,12 +88,12 @@
             </div>
             
             <div class="input-group">
-                <label for="absenceSetbackTemp">Absenktemperatur (statt 20°C): <span id="absenceSetbackTempValue">15</span>°C</label>
-                <input type="range" id="absenceSetbackTemp" min="14" max="20" value="15" step="1">
+                <label for="absenceTargetTemp">Zieltemperatur am leeren Tag (statt 20°C): <span id="absenceTargetTempValue">15</span>°C</label>
+                <input type="range" id="absenceTargetTemp" min="14" max="20" value="15" step="1">
             </div>
 
             <div class="result">
-                <p>Mögliche jährliche Ersparnis:</p>
+                <p>Mögliche jährliche Ersparnis (ggü. 20°C):</p>
                 <div id="absenceResult" class="cost-display"></div>
             </div>
         </section>
