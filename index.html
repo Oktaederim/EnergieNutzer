@@ -15,7 +15,7 @@
 
     <header>
         <h1>💡 Energie-Kompass</h1>
-        <p>Ein interaktives Werkzeug zur Visualisierung von Energiekosten</p>
+        <p>Ein interaktives Werkzeug zur Visualisierung von Energiekosten im Büro</p>
     </header>
 
     <main class="container">
@@ -38,18 +38,17 @@
             </div>
 
             <div class="result">
-                <p>Im Vergleich zu empfohlenen 20°C bedeutet dies:</p>
-                <div id="heatingResult" class="cost-display">
-                    </div>
+                <p>Im Vergleich zu empfohlenen 20°C:</p>
+                <div id="heatingResult" class="cost-display"></div>
             </div>
         </section>
 
         <section class="card">
             <h2>❄️ Kühlkosten für Technikräume</h2>
-            <p class="description">Kühlung ist energieintensiv. Geben Sie die Wärmelast Ihrer Geräte an und sehen Sie die Kosten und Einsparpotenziale.</p>
+            <p class="description">Kühlung ist energieintensiv. Sehen Sie die Kosten und das Sparpotenzial durch eine höhere Solltemperatur.</p>
 
             <div class="input-group">
-                <label for="coolingLoad">Abzuführende Wärmelast (z.B. Server, Geräte):</label>
+                <label for="coolingLoad">Abzuführende Wärmelast (z.B. Server):</label>
                 <div class="input-with-unit">
                     <input type="number" id="coolingLoad" value="3" step="0.1">
                     <span>kW</span>
@@ -63,24 +62,57 @@
 
             <div class="result">
                 <p>Geschätzte jährliche Betriebskosten:</p>
-                <div id="coolingResult" class="cost-display">
-                     </div>
+                <div id="coolingResult" class="cost-display"></div>
             </div>
         </section>
 
         <section class="card">
-            <h2>🏠 Einsparung durch Homeoffice</h2>
-            <p class="description">Sehen Sie direkt, wie sich die Absenkung der Heizung an Homeoffice-Tagen auf die jährlichen Kosten auswirkt.</p>
+            <h2>🏢 Potenzial bei Abwesenheit</h2>
+            <p class="description">Sehen Sie, wie viel Heizkosten eine bewusste Absenkung an unbesetzten Tagen (z.B. durch Homeoffice) einspart.</p>
 
             <div class="input-group">
-                <label for="homeofficeDays">Tage im Homeoffice pro Woche: <span id="homeofficeDaysValue">0</span></label>
-                <input type="range" id="homeofficeDays" min="0" max="5" value="0" step="1">
+                <label>Anzahl der leeren Bürotage pro Woche:</label>
+                <div id="day-selector" class="button-row">
+                    <button class="day-btn" data-days="1">1 Tag</button>
+                    <button class="day-btn active" data-days="2">2 Tage</button>
+                    <button class="day-btn" data-days="3">3 Tage</button>
+                    <button class="day-btn" data-days="4">4 Tage</button>
+                    <button class="day-btn" data-days="5">5 Tage</button>
+                </div>
             </div>
 
             <div class="result">
-                <p>Jährliche Heizkosten für die Homeoffice-Tage:</p>
-                <div id="homeofficeResult" class="cost-display">
-                     </div>
+                <p>Jährliche Heizkosten für diese Tage:</p>
+                <div id="absenceResult" class="cost-display"></div>
+            </div>
+        </section>
+        
+        <section class="card">
+            <h2>🖥️ Standby-Kosten-Check</h2>
+            <p class="description">Ein ungenutzter, aber nicht abgeschalteter PC kann erhebliche Stromkosten verursachen. Finden Sie Ihr Sparpotenzial!</p>
+            
+            <div class="input-group">
+                <label for="deviceSetup">Wählen Sie Ihr Geräte-Setup:</label>
+                <select id="deviceSetup">
+                    <option value="pc_2_monitors">PC + 2 Monitore</option>
+                    <option value="pc_1_monitor">PC + 1 Monitor</option>
+                    <option value="laptop_monitor">Laptop + 1 Monitor</option>
+                    <option value="laptop">Nur Laptop</option>
+                </select>
+            </div>
+        
+            <div class="input-group">
+                <label>Wie schalten Sie Ihre Geräte ab?</label>
+                <div id="shutdown-behavior" class="button-group">
+                    <button class="behavior-btn" data-behavior="standby_only">Nie (nur Standby)</button>
+                    <button class="behavior-btn active" data-behavior="shutdown_evening">Nur zum Feierabend</button>
+                    <button class="behavior-btn" data-behavior="shutdown_breaks">Auch in Pausen</button>
+                </div>
+            </div>
+        
+            <div class="result">
+                <p>Ihre Stromkosten vs. Sparpotenzial:</p>
+                <div id="standbyResult" class="cost-display"></div>
             </div>
         </section>
     </main>
