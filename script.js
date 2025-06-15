@@ -26,25 +26,34 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const resetBtn = document.getElementById('resetBtn');
-    // Modul 1
     const officeSizeSelector = document.getElementById('office-size-selector');
     const heatingTempSlider = document.getElementById('heatingTemp');
     const heatingTempValue = document.getElementById('heatingTempValue');
     const heatingResultDiv = document.getElementById('heatingResult');
-    // Modul 2
     const coolingLoadSlider = document.getElementById('coolingLoad');
     const coolingLoadValue = document.getElementById('coolingLoadValue');
     const coolingTempSlider = document.getElementById('coolingTemp');
     const coolingTempValue = document.getElementById('coolingTempValue');
     const coolingResultDiv = document.getElementById('coolingResult');
-    // Modul 3
     const daySelector = document.getElementById('day-selector');
     const absenceResultDiv = document.getElementById('absenceResult');
-    // Modul 4
     const deviceSetupSelect = document.getElementById('deviceSetup');
     const shutdownBehaviorGroup = document.getElementById('shutdown-behavior');
     const standbyResultDiv = document.getElementById('standbyResult');
 
+    // KORREKTUR: HILFSFUNKTIONEN werden zuerst definiert, um Fehler zu vermeiden.
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+    }
+    
+    function setActiveButton(groupElement, dataAttribute, value) {
+        groupElement.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset[dataAttribute] == value) btn.classList.add('active');
+        });
+    }
+
+    // --- BERECHNUNGSFUNKTIONEN ---
     function calculateHeating() {
         const temp = parseFloat(heatingTempSlider.value);
         heatingTempValue.textContent = temp.toFixed(1);
@@ -64,9 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const co2Difference = kwhDifference * config.co2FactorGas;
         
         if (costDifference > 0) {
-            heatingResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">Mehrkosten: +${formatCurrency(costDifference)}</span><span class="sub-value">Mehr-CO₂: +${co2Difference.toFixed(0)} kg</span></div>`;
+            heatingResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">+ ${formatCurrency(costDifference)}</span><span class="sub-value">+ ${co2Difference.toFixed(0)} kg CO₂</span></div>`;
         } else {
-            heatingResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Ersparnis: ${formatCurrency(Math.abs(costDifference))}</span><span class="sub-value">CO₂-Ersparnis: ${Math.abs(co2Difference).toFixed(0)} kg</span></div>`;
+            heatingResultDiv.innerHTML = `<div class="text-success"><span class="main-value">- ${formatCurrency(Math.abs(costDifference))}</span><span class="sub-value">- ${Math.abs(co2Difference).toFixed(0)} kg CO₂</span></div>`;
         }
     }
 
@@ -87,18 +96,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const co2ForSelectedTemp = kwhForSelectedTemp * config.co2FactorStrom;
 
         if (selectedTemp === config.defaults.coolingTemp) {
-            coolingResultDiv.innerHTML = `<div class="text-neutral"><span class="main-value">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg / Jahr</span></div>`;
+            coolingResultDiv.innerHTML = `<div class="text-neutral"><span class="main-value">Kosten: ${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg / Jahr</span></div>`;
             return;
         }
-
+        
         const kwhForBaseTemp = getYearlyKwh(config.defaults.coolingTemp, load);
         
         if (selectedTemp < config.defaults.coolingTemp) {
             const kwhDiff = kwhForSelectedTemp - kwhForBaseTemp;
-            coolingResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">Kosten: ${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg</span></div><div class="text-success sub-value" style="margin-top: 0.5rem">Mögliche Ersparnis: ${formatCurrency(kwhDiff * config.electricityCostPerKwh)} (${(kwhDiff * config.co2FactorStrom).toFixed(0)} kg CO₂)</div>`;
+            coolingResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">${co2ForSelectedTemp.toFixed(0)} kg CO₂</span></div><div class="text-success sub-value" style="margin-top: 0.5rem">Sparpotenzial: ${formatCurrency(kwhDiff * config.electricityCostPerKwh)} (${(kwhDiff * config.co2FactorStrom).toFixed(0)} kg CO₂)</div>`;
         } else {
             const kwhDiff = kwhForBaseTemp - kwhForSelectedTemp;
-            coolingResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Kosten: ${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg</span></div><div class="text-success sub-value" style="margin-top: 0.5rem">Ihre Ersparnis: ${formatCurrency(kwhDiff * config.electricityCostPerKwh)} (${(kwhDiff * config.co2FactorStrom).toFixed(0)} kg CO₂)</div>`;
+            coolingResultDiv.innerHTML = `<div class="text-success"><span class="main-value">${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">${co2ForSelectedTemp.toFixed(0)} kg CO₂</span></div><div class="text-success sub-value" style="margin-top: 0.5rem">Ersparnis ggü. 24°C: ${formatCurrency(kwhDiff * config.electricityCostPerKwh)} (${(kwhDiff * config.co2FactorStrom).toFixed(0)} kg CO₂)</div>`;
         }
     }
 
@@ -118,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const costSavings = yearlyKwhSavings * config.heatingCostPerKwh;
         const co2Savings = yearlyKwhSavings * config.co2FactorGas;
 
-        absenceResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Ersparnis: ${formatCurrency(costSavings)} / Jahr</span><span class="sub-value">CO₂-Reduktion: ${co2Savings.toFixed(0)} kg / Jahr</span></div>`;
+        absenceResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Ersparnis: ${formatCurrency(costSavings)}</span><span class="sub-value">CO₂-Reduktion: ${co2Savings.toFixed(0)} kg</span></div>`;
     }
 
     function calculateStandby() {
@@ -134,13 +143,18 @@ document.addEventListener('DOMContentLoaded', () => {
             else wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.off);
             return (wh / 1000) * config.workDaysPerYear;
         };
-
+        
         const kwhForBehavior = getYearlyKwh(device, behavior);
         const costForBehavior = kwhForBehavior * config.electricityCostPerKwh;
         const co2ForBehavior = kwhForBehavior * config.co2FactorStrom;
+        
+        if (behavior === config.defaults.behavior) {
+            standbyResultDiv.innerHTML = `<div class="text-neutral"><span class="main-value">Kosten: ${formatCurrency(costForBehavior)}</span><span class="sub-value">CO₂: ${co2ForBehavior.toFixed(0)} kg</span></div><div class="sub-value">Vergleichen Sie mit anderen Verhaltensweisen.</div>`;
+            return;
+        }
 
         if (behavior === 'shutdown_breaks') {
-            standbyResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Kosten: ${formatCurrency(costForBehavior)}</span><span class="sub-value">CO₂: ${co2ForBehavior.toFixed(0)} kg</span></div><div class="sub-value text-success" style="margin-top:0.5rem">Vorbildlich! Geringster Verbrauch.</div>`;
+            standbyResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Kosten: ${formatCurrency(costForBehavior)}</span><span class="sub-value">CO₂: ${co2ForBehavior.toFixed(0)} kg</span></div><div class="sub-value" style="margin-top:0.5rem">Vorbildlich! Geringster Verbrauch.</div>`;
             return;
         }
 
@@ -149,21 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const costSaving = kwhSaving * config.electricityCostPerKwh;
         const co2Saving = kwhSaving * config.co2FactorStrom;
         
-        standbyResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">Ihre Kosten: ${formatCurrency(costForBehavior)}</span><span class="sub-value">CO₂: ${co2ForBehavior.toFixed(0)} kg</span></div><div class="text-success sub-value" style="margin-top:0.5rem">Mögliche Ersparnis: ${formatCurrency(costSaving)} (${co2Saving.toFixed(0)} kg CO₂)</div>`;
-    }
-
-    function formatCurrency(value) {
-        return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+        standbyResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">${formatCurrency(costForBehavior)}</span><span class="sub-value">${co2ForBehavior.toFixed(0)} kg CO₂</span></div><div class="text-success sub-value" style="margin-top:0.5rem">Sparpotenzial: ${formatCurrency(costSaving)} (${co2Saving.toFixed(0)} kg CO₂)</div>`;
     }
     
-    function setActiveButton(groupElement, dataAttribute, value) {
-        groupElement.querySelectorAll('button').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset[dataAttribute] == value) btn.classList.add('active');
-        });
-    }
-
+    // --- STEUERUNGSFUNKTIONEN ---
     function resetToDefaults() {
+        // Setzt alle UI-Elemente auf die Standardwerte
         heatingTempSlider.value = config.defaults.heatingTemp;
         coolingLoadSlider.value = config.defaults.coolingLoad;
         coolingTempSlider.value = config.defaults.coolingTemp;
@@ -183,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateStandby();
     }
 
+    // --- EVENT LISTENERS ---
     resetBtn.addEventListener('click', resetToDefaults);
     officeSizeSelector.addEventListener('click', (e) => {
         if (e.target.classList.contains('size-btn')) {
@@ -208,5 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- INITIALISIERUNG ---
     resetToDefaults();
 });
