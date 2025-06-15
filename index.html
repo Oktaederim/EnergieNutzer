@@ -64,7 +64,7 @@
 
         <section class="card">
             <h2>🏢 Potenzial bei Abwesenheit</h2>
-            <p class="description">An leeren Bürotagen (z.B. durch Homeoffice) soll die Heizung von 20°C auf 15°C abgesenkt werden.</p>
+            <p class="description">An leeren Bürotagen (z.B. durch Homeoffice) die Heizung abzusenken, spart Energie. Wählen Sie die Absenktemperatur.</p>
 
             <div class="input-group">
                 <label>Für welche Bürogröße?</label>
@@ -85,6 +85,11 @@
                     <button class="day-btn" data-days="4">4</button>
                     <button class="day-btn" data-days="5">5</button>
                 </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="absenceSetbackTemp">Absenktemperatur (statt 20°C): <span id="absenceSetbackTempValue">15</span>°C</label>
+                <input type="range" id="absenceSetbackTemp" min="14" max="20" value="15" step="1">
             </div>
 
             <div class="result">
@@ -110,8 +115,8 @@
                 <div class="device-row">
                     <label>Anzahl Laptops:</label>
                     <div id="laptop-quantity-selector" class="button-row quantity-selector">
-                        <button class="quantity-btn" data-quantity="0">0</button>
-                        <button class="quantity-btn active" data-quantity="1">1</button>
+                        <button class="quantity-btn active" data-quantity="0">0</button>
+                        <button class="quantity-btn" data-quantity="1">1</button>
                         <button class="quantity-btn" data-quantity="2">2</button>
                         <button class="quantity-btn" data-quantity="3">3</button>
                     </div>
@@ -119,8 +124,8 @@
                 <div class="device-row">
                     <label>Anzahl Monitore:</label>
                     <div id="monitor-quantity-selector" class="button-row quantity-selector">
-                        <button class="quantity-btn" data-quantity="0">0</button>
-                        <button class="quantity-btn active" data-quantity="1">1</button>
+                        <button class="quantity-btn active" data-quantity="0">0</button>
+                        <button class="quantity-btn" data-quantity="1">1</button>
                         <button class="quantity-btn" data-quantity="2">2</button>
                         <button class="quantity-btn" data-quantity="3">3</button>
                     </div>
@@ -131,8 +136,7 @@
                 <label>Wie schalten Sie diese Geräte ab?</label>
                 <div id="shutdown-behavior" class="button-group">
                     <button class="behavior-btn" data-behavior="standby_only">Nie (nur Standby)</button>
-                    <button class="behavior-btn active" data-behavior="shutdown_evening">Nur zum Feierabend</button>
-                    <button class="behavior-btn" data-behavior="shutdown_breaks">Auch in Pausen</button>
+                    <button class="behavior-btn active" data-behavior="shutdown_evening">Zum Feierabend</button>
                 </div>
             </div>
         
