@@ -25,12 +25,10 @@ body {
     margin: 2rem auto;
     padding: 0 1rem;
     display: grid;
-    /* Standardmäßig einspaltig für mobile Geräte */
     grid-template-columns: 1fr;
     gap: 2rem;
 }
 
-/* 2x2 Grid für Bildschirme breiter als 900px */
 @media (min-width: 900px) {
     .container {
         grid-template-columns: repeat(2, 1fr);
@@ -42,12 +40,38 @@ header {
     color: white;
     text-align: center;
     padding: 1.5rem 1rem;
+    position: relative;
 }
 
-header h1 {
-    margin: 0;
-    font-size: 2.5rem;
+header h1 { margin: 0; font-size: 2.5rem; }
+
+.reset-button {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background-color: #ffc107;
+    color: #212529;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
+.reset-button:hover {
+    background-color: #ffca2c;
+}
+
+@media (max-width: 600px) {
+    .reset-button {
+        position: static;
+        margin-top: 1rem;
+        display: inline-block;
+        width: auto;
+    }
+}
+
 
 .card {
     background-color: var(--card-bg);
@@ -58,21 +82,10 @@ header h1 {
     flex-direction: column;
 }
 
-.card h2 {
-    color: var(--primary-color);
-    margin-top: 0;
-    font-size: 1.5rem;
-}
-
-.description {
-    font-size: 0.9rem;
-    margin-bottom: 1.5rem;
-    flex-grow: 1; 
-}
-
+.card h2 { color: var(--primary-color); margin-top: 0; font-size: 1.5rem; }
+.description { font-size: 0.9rem; margin-bottom: 1.5rem; flex-grow: 1; }
 .input-group { margin-bottom: 1.5rem; }
 .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 700; }
-
 .input-with-unit { display: flex; align-items: center; }
 .input-with-unit input { width: 80px; }
 .input-with-unit span { margin-left: 0.5rem; font-weight: 700; }
@@ -87,14 +100,10 @@ input[type="number"], select {
     background-color: #fff;
 }
 
-.button-group, .button-row {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap; /* Erlaubt Umbruch bei Platzmangel */
-}
+.button-group, .button-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .button-group button, .button-row button {
     flex-grow: 1;
-    padding: 0.75rem 0.5rem; /* Weniger horizontales Padding */
+    padding: 0.75rem 0.5rem;
     border: 2px solid var(--primary-color);
     background-color: white;
     color: var(--primary-color);
@@ -111,7 +120,6 @@ input[type="number"], select {
 
 .result { margin-top: auto; padding-top: 1rem; border-top: 1px solid #eee; }
 .result p { margin: 0 0 0.5rem 0; font-weight: 700; }
-
 .cost-display {
     font-size: 1.5rem;
     font-weight: 700;
@@ -127,7 +135,6 @@ input[type="number"], select {
 .text-neutral { color: var(--neutral-color); }
 
 .small-info { font-size: 1.1rem; font-weight: 400; display: block; }
-
 hr.separator { border: none; border-top: 1px solid #eee; margin: 0.5rem 0; }
 
 footer {
