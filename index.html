@@ -24,7 +24,7 @@
             
             <div class="input-group">
                 <label>Wählen Sie Ihre Bürogröße:</label>
-                <div id="office-size-selector" class="button-row">
+                <div id="heating-office-size-selector" class="button-row">
                     <button class="size-btn" data-size="15">15 m²</button>
                     <button class="size-btn active" data-size="25">25 m²</button>
                     <button class="size-btn" data-size="100">100 m²</button>
@@ -37,7 +37,7 @@
             </div>
 
             <div class="result">
-                <p>Abweichung von der TU-Vorgabe (20°C):</p>
+                <p>Jährliche Heizkosten für dieses Büro:</p>
                 <div id="heatingResult" class="cost-display"></div>
             </div>
         </section>
@@ -64,42 +64,69 @@
 
         <section class="card">
             <h2>🏢 Potenzial bei Abwesenheit</h2>
-            <p class="description">An leeren Bürotagen (z.B. durch Homeoffice) soll die Heizung von 20°C auf 15°C abgesenkt werden. Vergleichen Sie die Szenarien.</p>
+            <p class="description">An leeren Bürotagen (z.B. durch Homeoffice) soll die Heizung von 20°C auf 15°C abgesenkt werden.</p>
+
+            <div class="input-group">
+                <label>Für welche Bürogröße?</label>
+                <div id="absence-office-size-selector" class="button-row">
+                    <button class="size-btn" data-size="15">15 m²</button>
+                    <button class="size-btn active" data-size="25">25 m²</button>
+                    <button class="size-btn" data-size="100">100 m²</button>
+                </div>
+            </div>
 
             <div class="input-group">
                 <label>Anzahl der leeren Bürotage pro Woche:</label>
                 <div id="day-selector" class="button-row">
-                    <button class="day-btn active" data-days="0">0 Tage</button>
-                    <button class="day-btn" data-days="1">1 Tag</button>
-                    <button class="day-btn" data-days="2">2 Tage</button>
-                    <button class="day-btn" data-days="3">3 Tage</button>
-                    <button class="day-btn" data-days="4">4 Tage</button>
-                    <button class="day-btn" data-days="5">5 Tage</button>
+                    <button class="day-btn active" data-days="0">0</button>
+                    <button class="day-btn" data-days="1">1</button>
+                    <button class="day-btn" data-days="2">2</button>
+                    <button class="day-btn" data-days="3">3</button>
+                    <button class="day-btn" data-days="4">4</button>
+                    <button class="day-btn" data-days="5">5</button>
                 </div>
             </div>
 
             <div class="result">
-                <p>Jährliche Heizkosten-Ersparnis für diese Tage:</p>
+                <p>Mögliche jährliche Ersparnis:</p>
                 <div id="absenceResult" class="cost-display"></div>
             </div>
         </section>
         
         <section class="card">
             <h2>🖥️ Standby-Kosten-Check</h2>
-            <p class="description">Standby vermeiden ist eine klare Vorgabe. Sehen Sie, was konsequentes Abschalten Ihrer Geräte wirklich an Kosten und CO₂ spart.</p>
+            <p class="description">Stellen Sie Ihre Arbeitsplatz-Geräte zusammen und sehen Sie, was konsequentes Abschalten an Kosten und CO₂ spart.</p>
             
-            <div class="input-group">
-                <label for="deviceSetup">Wählen Sie Ihr Geräte-Setup:</label>
-                <select id="deviceSetup">
-                    <option value="pc_2_monitors">PC + 2 Monitore</option>
-                    <option value="pc_1_monitor">PC + 1 Monitor</option>
-                    <option value="laptop_monitor" selected>Laptop + 1 Monitor</option>
-                    <option value="laptop">Nur Laptop</option>
-                </select>
+            <div class="input-group device-selection">
+                <div class="device-row">
+                    <label>Anzahl PCs:</label>
+                    <div id="pc-quantity-selector" class="button-row quantity-selector">
+                        <button class="quantity-btn active" data-quantity="0">0</button>
+                        <button class="quantity-btn" data-quantity="1">1</button>
+                        <button class="quantity-btn" data-quantity="2">2</button>
+                    </div>
+                </div>
+                <div class="device-row">
+                    <label>Anzahl Laptops:</label>
+                    <div id="laptop-quantity-selector" class="button-row quantity-selector">
+                        <button class="quantity-btn" data-quantity="0">0</button>
+                        <button class="quantity-btn active" data-quantity="1">1</button>
+                        <button class="quantity-btn" data-quantity="2">2</button>
+                    </div>
+                </div>
+                <div class="device-row">
+                    <label>Anzahl Monitore:</label>
+                    <div id="monitor-quantity-selector" class="button-row quantity-selector">
+                        <button class="quantity-btn" data-quantity="0">0</button>
+                        <button class="quantity-btn active" data-quantity="1">1</button>
+                        <button class="quantity-btn" data-quantity="2">2</button>
+                        <button class="quantity-btn" data-quantity="3">3</button>
+                    </div>
+                </div>
             </div>
         
             <div class="input-group">
-                <label>Wie schalten Sie Ihre Geräte ab?</label>
+                <label>Wie schalten Sie diese Geräte ab?</label>
                 <div id="shutdown-behavior" class="button-group">
                     <button class="behavior-btn" data-behavior="standby_only">Nie (nur Standby)</button>
                     <button class="behavior-btn active" data-behavior="shutdown_evening">Nur zum Feierabend</button>
