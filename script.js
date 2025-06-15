@@ -22,9 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const devicePower = {
-        pc: { on: 120, standby: 4 },
-        laptop: { on: 45, standby: 2 },
-        monitor: { on: 25, standby: 0.5 }
+        pc: { on: 120, standby: 4, off: 1 },
+        laptop: { on: 45, standby: 2, off: 0.5 },
+        monitor: { on: 25, standby: 0.5, off: 0.3 }
     };
 
     // --- DOM-ELEMENTE ---
@@ -79,12 +79,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const kwhDifference = kwhForSelectedTemp - kwhForBaseTemp;
             const costDifference = kwhDifference * config.heatingCostPerKwh;
             const co2Difference = kwhDifference * config.co2FactorGas;
+            const percentage = (kwhDifference / kwhForBaseTemp) * 100;
             const sign = costDifference > 0 ? '+' : '';
             const diffClass = costDifference > 0 ? 'text-danger' : 'text-success';
-            diffHtml = `<span class="difference ${diffClass}">(${sign}${formatCurrency(costDifference)} / ${sign}${co2Difference.toFixed(0)} kg)</span>`;
+            diffHtml = `<span class="difference ${diffClass}">(${sign}${formatCurrency(costDifference)} / ${sign}${co2Difference.toFixed(0)} kg / ${sign}${percentage.toFixed(1)}%)</span>`;
         }
         
-        heatingResultDiv.innerHTML = `<div><span class="main-value">${formatCurrency(costForSelectedTemp)} ${diffHtml}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg / Jahr</span></div>`;
+        heatingResultDiv.innerHTML = `<div><span class="main-value">${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg / Jahr</span></div>${diffHtml}`;
     }
 
     function calculateCooling() {
@@ -109,11 +110,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const kwhDifference = kwhForSelectedTemp - kwhForBaseTemp;
             const costDifference = kwhDifference * config.electricityCostPerKwh;
             const co2Difference = kwhDifference * config.co2FactorStrom;
+            const percentage = (kwhDifference / kwhForBaseTemp) * 100;
             const sign = costDifference > 0 ? '+' : '';
             const diffClass = costDifference > 0 ? 'text-danger' : 'text-success';
-            diffHtml = `<span class="difference ${diffClass}">(${sign}${formatCurrency(costDifference)} / ${sign}${co2Difference.toFixed(0)} kg)</span>`;
+            diffHtml = `<span class="difference ${diffClass}">(${sign}${formatCurrency(costDifference)} / ${sign}${co2Difference.toFixed(0)} kg / ${sign}${percentage.toFixed(1)}%)</span>`;
         }
-        coolingResultDiv.innerHTML = `<div><span class="main-value">${formatCurrency(costForSelectedTemp)} ${diffHtml}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg / Jahr</span></div>`;
+        coolingResultDiv.innerHTML = `<div><span class="main-value">${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg / Jahr</span></div>${diffHtml}`;
     }
 
     function calculateAbsence() {
@@ -156,36 +158,42 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const getYearlyKwh = (beh) => {
+        const getYearlyKwh = (onlyStandby) => {
             let totalWh = 0;
             const dailyHours = { work: 9, night: 15 };
             for (const device in quantities) {
                 const qty = quantities[device];
                 if (qty > 0) {
                     const power = devicePower[device];
-                    let wh = 0;
-                    if (beh === 'standby_only') wh = (dailyHours.work * power.on) + (dailyHours.night * power.standby);
-                    else wh = (dailyHours.work * power.on);
+                    let wh = (dailyHours.work * power.on); // Betriebskosten sind immer da
+                    if(onlyStandby) {
+                        wh += (dailyHours.night * power.standby); // Standby-Kosten
+                    } else {
+                        wh += (dailyHours.night * power.off); // "Aus"-Kosten
+                    }
                     totalWh += wh * qty;
                 }
             }
             return (totalWh / 1000) * config.workDaysPerYear;
         };
 
-        const kwhForBehavior = getYearlyKwh(behavior);
-        const costForBehavior = kwhForBehavior * config.electricityCostPerKwh;
-        const co2ForBehavior = kwhForBehavior * config.co2FactorStrom;
+        const kwhStandby = getYearlyKwh(true);
+        const costStandby = kwhStandby * config.electricityCostPerKwh;
+        const co2Standby = kwhStandby * config.co2FactorStrom;
         
-        let savingsHtml = `<div class="text-success sub-value" style="margin-top:0.5rem">Vorbildlich! Geringster Verbrauch.</div>`;
-        if (behavior === 'standby_only') {
-            const kwhForBestBehavior = getYearlyKwh('shutdown_evening');
-            const kwhSaving = kwhForBehavior - kwhForBestBehavior;
-            const costSaving = kwhSaving * config.electricityCostPerKwh;
-            const co2Saving = kwhSaving * config.co2FactorStrom;
-            savingsHtml = `<div class="text-success sub-value" style="margin-top:0.5rem">Ersparnis durch Abschalten: ${formatCurrency(costSaving)} / ${co2Saving.toFixed(0)} kg CO₂</div>`;
+        const kwhShutdown = getYearlyKwh(false);
+        const costShutdown = kwhShutdown * config.electricityCostPerKwh;
+        const co2Shutdown = kwhShutdown * config.co2FactorStrom;
+
+        let displayHtml = '';
+        if (behavior === 'shutdown_evening') {
+            displayHtml = `<div><span class="main-value">${formatCurrency(costShutdown)}</span><span class="sub-value">CO₂: ${co2Shutdown.toFixed(0)} kg / Jahr</span></div><div class="text-success sub-value" style="margin-top:0.5rem">Vorbildlich! Geringster Verbrauch.</div>`;
+        } else { // standby_only
+            const costSaving = costStandby - costShutdown;
+            const co2Saving = co2Standby - co2Shutdown;
+            displayHtml = `<div><span class="main-value text-danger">${formatCurrency(costStandby)}</span><span class="sub-value">CO₂: ${co2Standby.toFixed(0)} kg / Jahr</span></div><div class="text-success sub-value" style="margin-top:0.5rem">Ersparnis durch Abschalten: ${formatCurrency(costSaving)} / ${co2Saving.toFixed(0)} kg CO₂</div>`;
         }
-        
-        standbyResultDiv.innerHTML = `<div><span class="main-value">${formatCurrency(costForBehavior)} / Jahr</span><span class="sub-value">CO₂: ${co2ForBehavior.toFixed(0)} kg / Jahr</span></div>${savingsHtml}`;
+        standbyResultDiv.innerHTML = displayHtml;
     }
     
     function syncOfficeSizeSelectors(newSize) {
@@ -220,19 +228,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT LISTENERS ---
     resetBtn.addEventListener('click', resetToDefaults);
     
-    heatingOfficeSizeSelector.addEventListener('click', (e) => {
-        if (e.target.classList.contains('size-btn')) {
-            syncOfficeSizeSelectors(e.target.dataset.size);
-            calculateHeating();
-            calculateAbsence();
-        }
-    });
-    absenceOfficeSizeSelector.addEventListener('click', (e) => {
-         if (e.target.classList.contains('size-btn')) {
-            syncOfficeSizeSelectors(e.target.dataset.size);
-            calculateHeating();
-            calculateAbsence();
-        }
+    const sizeSelectors = [heatingOfficeSizeSelector, absenceOfficeSizeSelector];
+    sizeSelectors.forEach(selector => {
+        selector.addEventListener('click', (e) => {
+            if (e.target.classList.contains('size-btn')) {
+                syncOfficeSizeSelectors(e.target.dataset.size);
+                calculateHeating();
+                calculateAbsence();
+            }
+        });
     });
 
     heatingTempSlider.addEventListener('input', calculateHeating);
@@ -246,7 +250,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     absenceSetbackTempSlider.addEventListener('input', calculateAbsence);
     
-    [pcQuantitySelector, laptopQuantitySelector, monitorQuantitySelector].forEach(selector => {
+    const quantitySelectors = [pcQuantitySelector, laptopQuantitySelector, monitorQuantitySelector];
+    quantitySelectors.forEach(selector => {
         selector.addEventListener('click', (e) => {
             if (e.target.classList.contains('quantity-btn')) {
                 setActiveButton(selector, 'quantity', e.target.dataset.quantity);
