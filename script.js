@@ -1,16 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- GRUNDEINSTELLUNGEN & KONSTANTEN ---
     const config = {
         heatingCostPerKwh: 0.12, 
         electricityCostPerKwh: 0.35,
         heatingSavingPerDegree: 0.06, 
         workDaysPerYear: 220,
-        // NEU: TU-Dortmund Standardwerte
+        co2FactorGas: 0.2,      // kg CO₂ pro kWh Erdgas
+        co2FactorStrom: 0.35,   // kg CO₂ pro kWh dt. Strommix (vereinfacht)
         defaults: {
+            officeSize: 25,
             heatingTemp: 20,
+            coolingLoad: 3,
             coolingTemp: 24,
-            absenceDays: 2,
+            absenceDays: 0,
             device: 'laptop_monitor',
             behavior: 'shutdown_evening'
         }
@@ -23,15 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
         laptop:         { on: 45,  standby: 2, off: 0.5 }
     };
 
-    // --- DOM-ELEMENTE ---
     const resetBtn = document.getElementById('resetBtn');
     // Modul 1
+    const officeSizeSelector = document.getElementById('office-size-selector');
     const heatingTempSlider = document.getElementById('heatingTemp');
     const heatingTempValue = document.getElementById('heatingTempValue');
-    const officeSizeSelect = document.getElementById('officeSize');
     const heatingResultDiv = document.getElementById('heatingResult');
     // Modul 2
-    const coolingLoadInput = document.getElementById('coolingLoad');
+    const coolingLoadSlider = document.getElementById('coolingLoad');
+    const coolingLoadValue = document.getElementById('coolingLoadValue');
     const coolingTempSlider = document.getElementById('coolingTemp');
     const coolingTempValue = document.getElementById('coolingTempValue');
     const coolingResultDiv = document.getElementById('coolingResult');
@@ -43,158 +45,131 @@ document.addEventListener('DOMContentLoaded', () => {
     const shutdownBehaviorGroup = document.getElementById('shutdown-behavior');
     const standbyResultDiv = document.getElementById('standbyResult');
 
-    // --- BERECHNUNGSFUNKTIONEN ---
-
     function calculateHeating() {
         const temp = parseFloat(heatingTempSlider.value);
         heatingTempValue.textContent = temp.toFixed(1);
-        
-        // NEU: Neutrale Anzeige bei Standardwert
+        const size = parseInt(officeSizeSelector.querySelector('.active').dataset.size);
+        const yearlyKwh = size * 70;
+
         if (temp === config.defaults.heatingTemp) {
-            heatingResultDiv.innerHTML = `<span class="text-neutral">Dies ist die TU-Vorgabe.</span>`;
+            const baseCost = yearlyKwh * config.heatingCostPerKwh;
+            const baseCo2 = yearlyKwh * config.co2FactorGas;
+            heatingResultDiv.innerHTML = `<div class="text-neutral"><span class="main-value">Kosten: ${formatCurrency(baseCost)} / Jahr</span><span class="sub-value">CO₂: ${baseCo2.toFixed(0)} kg / Jahr</span></div>`;
             return;
         }
 
-        const size = parseInt(officeSizeSelect.value);
-        const baseYearlyKwh = size * 70;
-        const baseCost = baseYearlyKwh * config.heatingCostPerKwh;
         const tempDifference = temp - config.defaults.heatingTemp;
-        const costDifference = baseCost * tempDifference * config.heatingSavingPerDegree;
-
-        if (costDifference > 0.01) {
-            heatingResultDiv.innerHTML = `<span class="text-danger">Mehrkosten: +${formatCurrency(costDifference)} / Jahr</span>`;
-        } else if (costDifference < -0.01) {
-            heatingResultDiv.innerHTML = `<span class="text-success">Ersparnis: ${formatCurrency(Math.abs(costDifference))} / Jahr</span>`;
+        const kwhDifference = yearlyKwh * tempDifference * config.heatingSavingPerDegree;
+        const costDifference = kwhDifference * config.heatingCostPerKwh;
+        const co2Difference = kwhDifference * config.co2FactorGas;
+        
+        if (costDifference > 0) {
+            heatingResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">Mehrkosten: +${formatCurrency(costDifference)}</span><span class="sub-value">Mehr-CO₂: +${co2Difference.toFixed(0)} kg</span></div>`;
+        } else {
+            heatingResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Ersparnis: ${formatCurrency(Math.abs(costDifference))}</span><span class="sub-value">CO₂-Ersparnis: ${Math.abs(co2Difference).toFixed(0)} kg</span></div>`;
         }
     }
 
     function calculateCooling() {
         const selectedTemp = parseInt(coolingTempSlider.value);
+        const load = parseFloat(coolingLoadSlider.value);
         coolingTempValue.textContent = selectedTemp;
+        coolingLoadValue.textContent = load.toFixed(1);
 
-        // NEU: Neutrale Anzeige bei Standardwert
+        const getYearlyKwh = (temp, currentLoad) => {
+            const tempFactor = 1 + (config.defaults.coolingTemp - temp) * 0.1;
+            const kwhPerHour = (currentLoad / 3.0) * tempFactor;
+            return kwhPerHour * 10 * config.workDaysPerYear;
+        };
+
+        const kwhForSelectedTemp = getYearlyKwh(selectedTemp, load);
+        const costForSelectedTemp = kwhForSelectedTemp * config.electricityCostPerKwh;
+        const co2ForSelectedTemp = kwhForSelectedTemp * config.co2FactorStrom;
+
         if (selectedTemp === config.defaults.coolingTemp) {
-            const costForBaseTemp = getCoolingCost(config.defaults.coolingTemp);
-            coolingResultDiv.innerHTML = `
-                <span class="text-neutral">Kosten (Referenz): ${formatCurrency(costForBaseTemp)} / Jahr</span>
-                <span class="small-info">Dies ist die aktuelle ITMC-Vorgabe.</span>`;
+            coolingResultDiv.innerHTML = `<div class="text-neutral"><span class="main-value">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg / Jahr</span></div>`;
             return;
         }
 
-        const costForSelectedTemp = getCoolingCost(selectedTemp);
-        const costForBaseTemp = getCoolingCost(config.defaults.coolingTemp);
-        let displayHtml = '';
-
+        const kwhForBaseTemp = getYearlyKwh(config.defaults.coolingTemp, load);
+        
         if (selectedTemp < config.defaults.coolingTemp) {
-            const potentialSaving = costForSelectedTemp - costForBaseTemp;
-            displayHtml = `
-                <span class="text-danger">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span>
-                <span class="small-info text-success">Mögliche Ersparnis: +${formatCurrency(potentialSaving)} / Jahr (bei ${config.defaults.coolingTemp}°C)</span>`;
-        } else { // selectedTemp > config.defaults.coolingTemp
-            const realizedSaving = costForBaseTemp - costForSelectedTemp;
-            displayHtml = `
-                <span class="text-success">Kosten: ${formatCurrency(costForSelectedTemp)} / Jahr</span>
-                <span class="small-info text-success">Ihre Ersparnis: ${formatCurrency(realizedSaving)} / Jahr (ggü. ${config.defaults.coolingTemp}°C)</span>`;
+            const kwhDiff = kwhForSelectedTemp - kwhForBaseTemp;
+            coolingResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">Kosten: ${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg</span></div><div class="text-success sub-value" style="margin-top: 0.5rem">Mögliche Ersparnis: ${formatCurrency(kwhDiff * config.electricityCostPerKwh)} (${(kwhDiff * config.co2FactorStrom).toFixed(0)} kg CO₂)</div>`;
+        } else {
+            const kwhDiff = kwhForBaseTemp - kwhForSelectedTemp;
+            coolingResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Kosten: ${formatCurrency(costForSelectedTemp)}</span><span class="sub-value">CO₂: ${co2ForSelectedTemp.toFixed(0)} kg</span></div><div class="text-success sub-value" style="margin-top: 0.5rem">Ihre Ersparnis: ${formatCurrency(kwhDiff * config.electricityCostPerKwh)} (${(kwhDiff * config.co2FactorStrom).toFixed(0)} kg CO₂)</div>`;
         }
-        coolingResultDiv.innerHTML = displayHtml;
     }
 
     function calculateAbsence() {
-        const activeBtn = daySelector.querySelector('.active');
-        if (!activeBtn) return;
-        
-        const days = parseInt(activeBtn.dataset.days);
-        const size = parseInt(officeSizeSelect.value);
+        const days = parseInt(daySelector.querySelector('.active').dataset.days);
+        const size = parseInt(officeSizeSelector.querySelector('.active').dataset.size);
 
         if (days === 0) {
-            absenceResultDiv.innerHTML = '<span>Keine Abwesenheitstage ausgewählt.</span>';
+            absenceResultDiv.innerHTML = '<span class="text-neutral">Keine Abwesenheitstage ausgewählt.</span>';
             return;
         }
 
         const baseKwhPerDay = (size * 70) / config.workDaysPerYear;
-        const costPerDayFull = baseKwhPerDay * config.heatingCostPerKwh;
-        const costPerDayReduced = costPerDayFull * (1 - ((21 - 16) * config.heatingSavingPerDegree));
+        const kwhSavingPerDay = baseKwhPerDay * ((20 - 15) * config.heatingSavingPerDegree);
+        const yearlyKwhSavings = kwhSavingPerDay * days * 52;
+        
+        const costSavings = yearlyKwhSavings * config.heatingCostPerKwh;
+        const co2Savings = yearlyKwhSavings * config.co2FactorGas;
 
-        const yearlyCostFull = costPerDayFull * days * 52;
-        const yearlyCostReduced = costPerDayReduced * days * 52;
-        const yearlySavings = yearlyCostFull - yearlyCostReduced;
-
-        absenceResultDiv.innerHTML = `
-            <span class="small-info">Heizung an (21°C): <b class="text-danger">${formatCurrency(yearlyCostFull)}</b></span>
-            <span class="small-info">Abgesenkt (16°C): <b class="text-success">${formatCurrency(yearlyCostReduced)}</b></span>
-            <hr class="separator">
-            <b>Ihre Ersparnis: <span class="text-success">${formatCurrency(yearlySavings)} / Jahr</span></b>
-        `;
+        absenceResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Ersparnis: ${formatCurrency(costSavings)} / Jahr</span><span class="sub-value">CO₂-Reduktion: ${co2Savings.toFixed(0)} kg / Jahr</span></div>`;
     }
 
     function calculateStandby() {
         const device = deviceSetupSelect.value;
         const behavior = shutdownBehaviorGroup.querySelector('.active').dataset.behavior;
         
-        const costForBehavior = getStandbyCost(device, behavior);
+        const getYearlyKwh = (dev, beh) => {
+            const power = devicePower[dev];
+            const dailyHours = { work: 8, pause: 1, night: 15 };
+            let wh = 0;
+            if (beh === 'standby_only') wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.standby);
+            else if (beh === 'shutdown_evening') wh = (dailyHours.work * power.on) + (dailyHours.pause * power.standby) + (dailyHours.night * power.off);
+            else wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.off);
+            return (wh / 1000) * config.workDaysPerYear;
+        };
 
-        // NEU: Neutrale Anzeige bei Standardverhalten
-        if(behavior === config.defaults.behavior) {
-            standbyResultDiv.innerHTML = `
-                <span class="small-info text-neutral">Jährl. Kosten (Standard): <b>${formatCurrency(costForBehavior)}</b></span>
-                 <span class="small-info">Vergleichen Sie mit anderen Verhaltensweisen.</span>`;
+        const kwhForBehavior = getYearlyKwh(device, behavior);
+        const costForBehavior = kwhForBehavior * config.electricityCostPerKwh;
+        const co2ForBehavior = kwhForBehavior * config.co2FactorStrom;
+
+        if (behavior === 'shutdown_breaks') {
+            standbyResultDiv.innerHTML = `<div class="text-success"><span class="main-value">Kosten: ${formatCurrency(costForBehavior)}</span><span class="sub-value">CO₂: ${co2ForBehavior.toFixed(0)} kg</span></div><div class="sub-value text-success" style="margin-top:0.5rem">Vorbildlich! Geringster Verbrauch.</div>`;
             return;
         }
-        
-        const costForBestBehavior = getStandbyCost(device, 'shutdown_breaks');
-        const potentialSaving = costForBehavior - costForBestBehavior;
-        
-        standbyResultDiv.innerHTML = `
-            <span class="small-info">Ihre jährl. Kosten: <b class="text-danger">${formatCurrency(costForBehavior)}</b></span>
-            <hr class="separator">
-            <b>Mögliche Ersparnis: <span class="text-success">${formatCurrency(potentialSaving)} / Jahr</span></b>
-        `;
-    }
 
-    // --- HILFSFUNKTIONEN ---
-    function getCoolingCost(temp) {
-        const load = parseFloat(coolingLoadInput.value) || 3;
-        const tempFactor = 1 + (config.defaults.coolingTemp - temp) * 0.1;
-        const kwhPerHour = (load / config.coolingEER) * tempFactor;
-        const costPerDay = kwhPerHour * 10;
-        return costPerDay * config.workDaysPerYear;
-    }
-    
-    function getStandbyCost(device, behavior) {
-        const power = devicePower[device];
-        const dailyHours = { work: 8, pause: 1, night: 15 };
-        let wh = 0;
-        if (behavior === 'standby_only') {
-            wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.standby);
-        } else if (behavior === 'shutdown_evening') {
-            wh = (dailyHours.work * power.on) + (dailyHours.pause * power.standby) + (dailyHours.night * power.off);
-        } else { // shutdown_breaks
-            wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.off);
-        }
-        const yearlyKwh = (wh / 1000) * config.workDaysPerYear;
-        return yearlyKwh * config.electricityCostPerKwh;
+        const kwhForBestBehavior = getYearlyKwh(device, 'shutdown_breaks');
+        const kwhSaving = kwhForBehavior - kwhForBestBehavior;
+        const costSaving = kwhSaving * config.electricityCostPerKwh;
+        const co2Saving = kwhSaving * config.co2FactorStrom;
+        
+        standbyResultDiv.innerHTML = `<div class="text-danger"><span class="main-value">Ihre Kosten: ${formatCurrency(costForBehavior)}</span><span class="sub-value">CO₂: ${co2ForBehavior.toFixed(0)} kg</span></div><div class="text-success sub-value" style="margin-top:0.5rem">Mögliche Ersparnis: ${formatCurrency(costSaving)} (${co2Saving.toFixed(0)} kg CO₂)</div>`;
     }
 
     function formatCurrency(value) {
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
     }
-
+    
     function setActiveButton(groupElement, dataAttribute, value) {
-        const buttons = groupElement.querySelectorAll('button');
-        buttons.forEach(btn => {
+        groupElement.querySelectorAll('button').forEach(btn => {
             btn.classList.remove('active');
-            if (btn.dataset[dataAttribute] == value) {
-                btn.classList.add('active');
-            }
+            if (btn.dataset[dataAttribute] == value) btn.classList.add('active');
         });
     }
 
-    // --- STEUERUNGSFUNKTIONEN ---
     function resetToDefaults() {
         heatingTempSlider.value = config.defaults.heatingTemp;
+        coolingLoadSlider.value = config.defaults.coolingLoad;
         coolingTempSlider.value = config.defaults.coolingTemp;
         deviceSetupSelect.value = config.defaults.device;
         
+        setActiveButton(officeSizeSelector, 'size', config.defaults.officeSize);
         setActiveButton(daySelector, 'days', config.defaults.absenceDays);
         setActiveButton(shutdownBehaviorGroup, 'behavior', config.defaults.behavior);
 
@@ -208,11 +183,16 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateStandby();
     }
 
-    // --- EVENT LISTENERS ---
     resetBtn.addEventListener('click', resetToDefaults);
-    officeSizeSelect.addEventListener('input', () => { calculateHeating(); calculateAbsence(); });
+    officeSizeSelector.addEventListener('click', (e) => {
+        if (e.target.classList.contains('size-btn')) {
+            setActiveButton(officeSizeSelector, 'size', e.target.dataset.size);
+            calculateHeating();
+            calculateAbsence();
+        }
+    });
     heatingTempSlider.addEventListener('input', calculateHeating);
-    coolingLoadInput.addEventListener('input', calculateCooling);
+    coolingLoadSlider.addEventListener('input', calculateCooling);
     coolingTempSlider.addEventListener('input', calculateCooling);
     daySelector.addEventListener('click', (e) => {
         if (e.target.classList.contains('day-btn')) {
@@ -228,6 +208,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- INITIALISIERUNG ---
     resetToDefaults();
 });
