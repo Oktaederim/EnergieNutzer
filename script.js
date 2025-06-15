@@ -11,24 +11,37 @@ document.addEventListener('DOMContentLoaded', () => {
         workDaysPerYear: 220,
     };
 
+    // NEU: Konstanten für Standby-Verbrauch
+    const devicePower = {
+        pc_2_monitors:  { on: 150, standby: 5, off: 1 },
+        pc_1_monitor:   { on: 110, standby: 4, off: 1 },
+        laptop_monitor: { on: 70,  standby: 3, off: 1 },
+        laptop:         { on: 45,  standby: 2, off: 0.5 }
+    };
+
     // --- DOM-ELEMENTE AUSWÄHLEN ---
+    // Modul 1
     const heatingTempSlider = document.getElementById('heatingTemp');
     const heatingTempValue = document.getElementById('heatingTempValue');
     const officeSizeSelect = document.getElementById('officeSize');
     const heatingResultDiv = document.getElementById('heatingResult');
-
+    // Modul 2
     const coolingLoadInput = document.getElementById('coolingLoad');
     const coolingTempSlider = document.getElementById('coolingTemp');
     const coolingTempValue = document.getElementById('coolingTempValue');
     const coolingResultDiv = document.getElementById('coolingResult');
-
-    const homeofficeDaysSlider = document.getElementById('homeofficeDays');
-    const homeofficeDaysValue = document.getElementById('homeofficeDaysValue');
-    const homeofficeResultDiv = document.getElementById('homeofficeResult');
+    // Modul 3
+    const daySelector = document.getElementById('day-selector');
+    const absenceResultDiv = document.getElementById('absenceResult');
+    // Modul 4
+    const deviceSetupSelect = document.getElementById('deviceSetup');
+    const shutdownBehaviorGroup = document.getElementById('shutdown-behavior');
+    const standbyResultDiv = document.getElementById('standbyResult');
 
     // --- BERECHNUNGSFUNKTIONEN ---
 
     function calculateHeating() {
+        // Diese Funktion bleibt unverändert
         const temp = parseFloat(heatingTempSlider.value);
         const size = parseInt(officeSizeSelect.value);
         const baseYearlyKwh = size * 70;
@@ -48,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateCooling() {
+        // Diese Funktion bleibt unverändert
         const load = parseFloat(coolingLoadInput.value);
         const selectedTemp = parseInt(coolingTempSlider.value);
         coolingTempValue.textContent = selectedTemp;
@@ -85,14 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         coolingResultDiv.innerHTML = displayHtml;
     }
-
-    function calculateHomeOffice() {
-        const days = parseInt(homeofficeDaysSlider.value);
+    
+    function calculateAbsence() {
+        const activeBtn = daySelector.querySelector('.active');
+        if (!activeBtn) return;
+        
+        const days = parseInt(activeBtn.dataset.days);
         const size = parseInt(officeSizeSelect.value);
-        homeofficeDaysValue.textContent = days;
 
         if (days === 0) {
-            homeofficeResultDiv.innerHTML = '<span>Bitte Tage für Homeoffice auswählen.</span>';
+            absenceResultDiv.innerHTML = '<span>Bitte Tage auswählen.</span>';
             return;
         }
 
@@ -104,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const yearlyCostReduced = costPerDayReduced * days * 52;
         const yearlySavings = yearlyCostFull - yearlyCostReduced;
 
-        homeofficeResultDiv.innerHTML = `
+        absenceResultDiv.innerHTML = `
             <span class="small-info">Heizung an (21°C): <b class="text-danger">${formatCurrency(yearlyCostFull)}</b></span>
             <span class="small-info">Abgesenkt (16°C): <b class="text-success">${formatCurrency(yearlyCostReduced)}</b></span>
             <hr class="separator">
@@ -112,24 +128,79 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    function calculateStandby() {
+        const device = deviceSetupSelect.value;
+        const behavior = shutdownBehaviorGroup.querySelector('.active').dataset.behavior;
+        const power = devicePower[device];
+
+        // Stunden pro Tag: 8h Arbeit, 1h Pause, 15h "Nacht"
+        const dailyHours = { work: 8, pause: 1, night: 15 };
+
+        const getConsumptionKwh = (b) => {
+            let wh = 0;
+            if (b === 'standby_only') {
+                wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.standby);
+            } else if (b === 'shutdown_evening') {
+                wh = (dailyHours.work * power.on) + (dailyHours.pause * power.standby) + (dailyHours.night * power.off);
+            } else { // shutdown_breaks
+                wh = (dailyHours.work * power.on) + ((dailyHours.pause + dailyHours.night) * power.off);
+            }
+            return (wh / 1000) * config.workDaysPerYear; // kWh pro Jahr
+        };
+
+        const costForBehavior = getConsumptionKwh(behavior) * config.electricityCostPerKwh;
+        const costForBestBehavior = getConsumptionKwh('shutdown_breaks') * config.electricityCostPerKwh;
+        const potentialSaving = costForBehavior - costForBestBehavior;
+        
+        standbyResultDiv.innerHTML = `
+            <span class="small-info">Ihre jährl. Kosten: <b class="text-danger">${formatCurrency(costForBehavior)}</b></span>
+            <hr class="separator">
+            <b>Mögliche Ersparnis: <span class="text-success">${formatCurrency(potentialSaving)} / Jahr</span></b>
+        `;
+    }
+
+    // --- HILFSFUNKTIONEN ---
     function formatCurrency(value) {
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
     }
 
     // --- EVENT LISTENERS ---
-    if (heatingTempSlider) heatingTempSlider.addEventListener('input', calculateHeating);
-    if (officeSizeSelect) officeSizeSelect.addEventListener('input', () => {
+    // Module 1 & 3
+    officeSizeSelect.addEventListener('input', () => {
         calculateHeating();
-        calculateHomeOffice();
+        calculateAbsence();
+    });
+    heatingTempSlider.addEventListener('input', calculateHeating);
+
+    // Modul 2
+    coolingLoadInput.addEventListener('input', calculateCooling);
+    coolingTempSlider.addEventListener('input', calculateCooling);
+    
+    // Modul 3
+    daySelector.addEventListener('click', (e) => {
+        if (e.target.classList.contains('day-btn')) {
+            daySelector.querySelector('.active').classList.remove('active');
+            e.target.classList.add('active');
+            calculateAbsence();
+        }
     });
 
-    if (coolingLoadInput) coolingLoadInput.addEventListener('input', calculateCooling);
-    if (coolingTempSlider) coolingTempSlider.addEventListener('input', calculateCooling);
-
-    if (homeofficeDaysSlider) homeofficeDaysSlider.addEventListener('input', calculateHomeOffice);
+    // Modul 4
+    deviceSetupSelect.addEventListener('input', calculateStandby);
+    shutdownBehaviorGroup.addEventListener('click', (e) => {
+        if (e.target.classList.contains('behavior-btn')) {
+            shutdownBehaviorGroup.querySelector('.active').classList.remove('active');
+            e.target.classList.add('active');
+            calculateStandby();
+        }
+    });
 
     // --- INITIALISIERUNG ---
-    calculateHeating();
-    calculateCooling();
-    calculateHomeOffice();
+    function init() {
+        calculateHeating();
+        calculateCooling();
+        calculateAbsence();
+        calculateStandby();
+    }
+    init();
 });
