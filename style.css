@@ -60,7 +60,7 @@ header h1 {
 .description {
     font-size: 0.9rem;
     margin-bottom: 1.5rem;
-    flex-grow: 1; /* Sorgt dafür, dass Karten die gleiche Höhe haben */
+    flex-grow: 1; 
 }
 
 /* Eingabegruppen */
@@ -127,7 +127,7 @@ input[type="number"], select {
 
 /* Ergebnis-Anzeige */
 .result {
-    margin-top: auto; /* Schiebt das Ergebnis nach unten */
+    margin-top: auto;
     padding-top: 1rem;
     border-top: 1px solid #eee;
 }
@@ -138,9 +138,14 @@ input[type="number"], select {
 }
 
 .cost-display {
-    font-size: 2rem;
+    font-size: 1.8rem; /* Schriftgröße leicht angepasst für besseren Zeilenumbruch */
     font-weight: 700;
     margin-top: 0.5rem;
+    /* NEU: Feste Mindesthöhe, um "Springen" zu verhindern */
+    min-height: 5.5rem; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .text-success {
@@ -150,6 +155,15 @@ input[type="number"], select {
 .text-danger {
     color: var(--danger-color);
 }
+
+/* NEU: Kleinere Schrift für Zusatzinfos */
+.small-info {
+    font-size: 1rem;
+    font-weight: 400;
+    display: block;
+    margin-top: 0.5rem;
+}
+
 
 /* Fußzeile */
 footer {
