@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         monitor: { on: 25, standby: 0.5 }
     };
 
+    // --- DOM-ELEMENTE ---
     const resetBtn = document.getElementById('resetBtn');
     const heatingOfficeSizeSelector = document.getElementById('heating-office-size-selector');
     const heatingTempSlider = document.getElementById('heatingTemp');
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const shutdownBehaviorGroup = document.getElementById('shutdown-behavior');
     const standbyResultDiv = document.getElementById('standbyResult');
 
+    // --- HILFSFUNKTIONEN ---
     function formatCurrency(value) {
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
     }
@@ -60,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- BERECHNUNGSFUNKTIONEN ---
     function calculateHeating() {
         const temp = parseFloat(heatingTempSlider.value);
         heatingTempValue.textContent = temp.toFixed(1);
@@ -77,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const costDifference = kwhDifference * config.heatingCostPerKwh;
             const co2Difference = kwhDifference * config.co2FactorGas;
             const sign = costDifference > 0 ? '+' : '';
-
             const diffClass = costDifference > 0 ? 'text-danger' : 'text-success';
             diffHtml = `<span class="difference ${diffClass}">(${sign}${formatCurrency(costDifference)} / ${sign}${co2Difference.toFixed(0)} kg)</span>`;
         }
@@ -156,14 +158,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const getYearlyKwh = (beh) => {
             let totalWh = 0;
-            const dailyHours = { work: 9, night: 15 }; // 9h Arbeit inkl. Pause
+            const dailyHours = { work: 9, night: 15 };
             for (const device in quantities) {
                 const qty = quantities[device];
                 if (qty > 0) {
                     const power = devicePower[device];
                     let wh = 0;
                     if (beh === 'standby_only') wh = (dailyHours.work * power.on) + (dailyHours.night * power.standby);
-                    else wh = (dailyHours.work * power.on); // Bei "shutdown_evening" ist Standby 0
+                    else wh = (dailyHours.work * power.on);
                     totalWh += wh * qty;
                 }
             }
@@ -180,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const kwhSaving = kwhForBehavior - kwhForBestBehavior;
             const costSaving = kwhSaving * config.electricityCostPerKwh;
             const co2Saving = kwhSaving * config.co2FactorStrom;
-            savingsHtml = `<div class="text-success sub-value" style="margin-top:0.5rem">Sparpotenzial: ${formatCurrency(costSaving)} / ${co2Saving.toFixed(0)} kg CO₂</div>`;
+            savingsHtml = `<div class="text-success sub-value" style="margin-top:0.5rem">Ersparnis durch Abschalten: ${formatCurrency(costSaving)} / ${co2Saving.toFixed(0)} kg CO₂</div>`;
         }
         
         standbyResultDiv.innerHTML = `<div><span class="main-value">${formatCurrency(costForBehavior)} / Jahr</span><span class="sub-value">CO₂: ${co2ForBehavior.toFixed(0)} kg / Jahr</span></div>${savingsHtml}`;
