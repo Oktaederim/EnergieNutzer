@@ -1,63 +1,102 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Büro-Heizkostenrechner</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 2em;
-      max-width: 600px;
-      margin: auto;
-    }
-    .output {
-      margin-top: 1em;
-      font-size: 1.2em;
-    }
-    input[type="range"] {
-      width: 100%;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energie-Kompass Öffentliche Verwaltung</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <h1>Heizkosten im Büro</h1>
-  <p>Stelle die gewünschte Raumtemperatur ein:</p>
+    <header>
+        <h1>💡 Energie-Kompass</h1>
+        <p>Ein interaktives Werkzeug zur Visualisierung von Energiekosten</p>
+    </header>
 
-  <label for="temp">Raumtemperatur: <span id="temp-value">20</span> °C</label>
-  <input type="range" id="temp" min="18" max="22" step="0.1" value="20">
+    <main class="container">
+        <section class="card">
+            <h2>🌡️ Heizkosten im Büro</h2>
+            <p class="description">Jedes Grad weniger spart ca. 6% Heizenergie. Sehen Sie hier, was Ihre Wunschtemperatur für die jährlichen Kosten bedeutet.</p>
+            
+            <div class="input-group">
+                <label for="officeSize">Wählen Sie Ihre Bürogröße:</label>
+                <select id="officeSize">
+                    <option value="15">Kleines Büro (~15 m²)</option>
+                    <option value="25" selected>Standardbüro (~25 m²)</option>
+                    <option value="100">Großraumbüro (~100 m²)</option>
+                </select>
+            </div>
 
-  <div class="output">
-    <p><strong>Energieverbrauch:</strong> <span id="verbrauch">10.000</span> kWh/Jahr</p>
-    <p><strong>Heizkosten:</strong> <span id="kosten">1.000</span> € pro Jahr</p>
-  </div>
+            <div class="input-group">
+                <label for="heatingTemp">Ihre gewünschte Raumtemperatur: <span id="heatingTempValue">21</span>°C</label>
+                <input type="range" id="heatingTemp" min="19" max="24" value="21" step="0.5">
+            </div>
 
-  <script>
-    const tempSlider = document.getElementById('temp');
-    const tempValue = document.getElementById('temp-value');
-    const verbrauch = document.getElementById('verbrauch');
-    const kosten = document.getElementById('kosten');
+            <div class="result">
+                <p>Im Vergleich zu empfohlenen 20°C bedeutet dies:</p>
+                <div id="heatingResult" class="cost-display">
+                    </div>
+            </div>
+        </section>
 
-    const grundVerbrauch = 10000; // kWh pro Jahr bei 20°C
-    const preisProKWh = 0.10; // Euro
+        <section class="card">
+            <h2>❄️ Kühlkosten für Technikräume</h2>
+            <p class="description">Kühlung ist energieintensiv. Geben Sie die Wärmelast Ihrer Geräte an und sehen Sie die Kosten.</p>
 
-    function updateValues() {
-      const temp = parseFloat(tempSlider.value);
-      tempValue.textContent = temp.toFixed(1);
+            <div class="input-group">
+                <label for="coolingLoad">Abzuführende Wärmelast (z.B. Server, Geräte):</label>
+                <div class="input-with-unit">
+                    <input type="number" id="coolingLoad" value="3" step="0.1">
+                    <span>kW</span>
+                </div>
+            </div>
 
-      // Verbrauchsänderung: ca. ±6 % pro °C
-      const delta = temp - 20;
-      const faktor = 1 + (delta * 0.06);
-      const aktuellerVerbrauch = grundVerbrauch * faktor;
-      const aktuelleKosten = aktuellerVerbrauch * preisProKWh;
+            <div class="input-group">
+                <label for="coolingTemp">Gewünschte Raumtemperatur: <span id="coolingTempValue">22</span>°C</label>
+                <input type="range" id="coolingTemp" min="18" max="26" value="22" step="1">
+            </div>
 
-      verbrauch.textContent = aktuellerVerbrauch.toFixed(0);
-      kosten.textContent = aktuelleKosten.toFixed(0);
-    }
+            <div class="result">
+                <p>Geschätzte Betriebskosten für die Kühlung:</p>
+                <div id="coolingResult" class="cost-display">
+                     </div>
+            </div>
+        </section>
 
-    tempSlider.addEventListener('input', updateValues);
-    updateValues(); // Initiale Werte setzen
-  </script>
+        <section class="card">
+            <h2>🏠 Einsparung durch Homeoffice</h2>
+            <p class="description">Was sparen Sie wirklich, wenn Sie die Heizung bei Abwesenheit reduzieren?</p>
 
+            <div class="input-group">
+                <label for="homeofficeDays">Tage im Homeoffice pro Woche: <span id="homeofficeDaysValue">0</span></label>
+                <input type="range" id="homeofficeDays" min="0" max="5" value="0" step="1">
+            </div>
+
+            <div class="input-group">
+                <label>Verhalten an Homeoffice-Tagen:</label>
+                <div class="button-group">
+                    <button id="heatingOnBtn" class="active">Heizung läuft (21°C)</button>
+                    <button id="heatingOffBtn">Heizung abgesenkt (16°C)</button>
+                </div>
+            </div>
+
+            <div class="result">
+                <p>Ihre Entscheidung bewirkt:</p>
+                <div id="homeofficeResult" class="cost-display">
+                     </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p><strong>Hinweis:</strong> Alle Berechnungen sind Schätzungen und dienen der Sensibilisierung.
+        <br>Annahmen: Heizkosten 12 ct/kWh, Stromkosten 35 ct/kWh, mittlere Gebäudedämmung.
+        </p>
+    </footer>
+
+    <script src="script.js"></script>
 </body>
 </html>
