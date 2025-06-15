@@ -44,7 +44,6 @@ header {
 
 header h1 { margin: 0; font-size: 2.5rem; }
 
-/* GEÄNDERT: Reset-Button ist nun zentral unter dem Text */
 .reset-button {
     margin-top: 1rem;
     padding: 0.6rem 1.2rem;
@@ -76,14 +75,6 @@ header h1 { margin: 0; font-size: 2.5rem; }
 .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 700; }
 
 input[type="range"] { width: 100%; cursor: pointer; }
-select {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-family: var(--font-family);
-    background-color: #fff;
-}
 
 .button-group, .button-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .button-group button, .button-row button {
@@ -97,12 +88,28 @@ select {
     font-weight: 700;
     transition: all 0.2s ease-in-out;
     text-align: center;
-    min-width: 60px;
+    min-width: 50px;
 }
 .button-group button.active, .button-row button.active {
     background-color: var(--primary-color);
     color: white;
 }
+
+/* Spezifische Stile für neue Elemente */
+.device-selection .device-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+.device-selection .quantity-selector {
+    flex-grow: 0;
+    flex-basis: 60%;
+}
+.quantity-selector button {
+    min-width: 40px;
+}
+
 
 .result { margin-top: auto; padding-top: 1rem; border-top: 1px solid #eee; }
 .result p { margin: 0 0 0.5rem 0; font-weight: 700; }
@@ -114,14 +121,20 @@ select {
     line-height: 1.4;
 }
 
-.main-value { font-size: 1.6rem; font-weight: 700; }
+.main-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+.difference {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-left: 0.75rem;
+}
 .sub-value { font-size: 1rem; font-weight: 400; display: block; margin-top: 0.25rem; }
 
 .text-success { color: var(--success-color); }
 .text-danger { color: var(--danger-color); }
 .text-neutral { color: var(--neutral-color); }
-
-hr.separator { border: none; border-top: 1px solid #eee; margin: 0.5rem 0; }
 
 footer {
     text-align: center;
