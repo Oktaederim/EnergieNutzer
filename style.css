@@ -95,7 +95,6 @@ input[type="range"] { width: 100%; cursor: pointer; }
     color: white;
 }
 
-/* Spezifische Stile für neue Elemente */
 .device-selection .device-row {
     display: flex;
     justify-content: space-between;
