@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Energie-Kompass TU Dortmund</title>
-    
     <link rel="stylesheet" href="style.css">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
@@ -15,22 +13,22 @@
 
     <header>
         <h1>💡 Energie-Kompass TU Dortmund</h1>
-        <p>Ein interaktives Werkzeug zur Visualisierung von Energiekosten im Büro</p>
+        <p>Ein interaktives Werkzeug zur Visualisierung von Energiekosten und CO₂-Emissionen</p>
         <button id="resetBtn" class="reset-button">🔄 Auf TU-Standard zurücksetzen</button>
     </header>
 
     <main class="container">
         <section class="card">
             <h2>🌡️ Heizkosten im Büro</h2>
-            <p class="description">Die TU-Vorgabe für Büros ist 20°C. Jedes Grad Abweichung beeinflusst die Heizkosten. Sehen Sie hier, wie sich das auswirkt.</p>
+            <p class="description">Die TU-Vorgabe für Büros ist 20°C. Jedes Grad Abweichung beeinflusst die Heizkosten und den CO₂-Ausstoß.</p>
             
             <div class="input-group">
-                <label for="officeSize">Wählen Sie Ihre Bürogröße:</label>
-                <select id="officeSize">
-                    <option value="15">Kleines Büro (~15 m²)</option>
-                    <option value="25" selected>Standardbüro (~25 m²)</option>
-                    <option value="100">Großraumbüro (~100 m²)</option>
-                </select>
+                <label>Wählen Sie Ihre Bürogröße:</label>
+                <div id="office-size-selector" class="button-row">
+                    <button class="size-btn" data-size="15">15 m²</button>
+                    <button class="size-btn active" data-size="25">25 m²</button>
+                    <button class="size-btn" data-size="100">100 m²</button>
+                </div>
             </div>
 
             <div class="input-group">
@@ -46,14 +44,11 @@
 
         <section class="card">
             <h2>❄️ Kühlkosten für Technikräume</h2>
-            <p class="description">Das ITMC hebt die Temperatur für die Serverkühlung schrittweise an (aktuell 24°C). Sehen Sie die Auswirkung jeder Anpassung.</p>
+            <p class="description">Das ITMC hebt die Temperatur für die Serverkühlung schrittweise an. Sehen Sie die Auswirkung auf Kosten und CO₂.</p>
 
             <div class="input-group">
-                <label for="coolingLoad">Abzuführende Wärmelast (z.B. Server):</label>
-                <div class="input-with-unit">
-                    <input type="number" id="coolingLoad" value="3" step="0.1">
-                    <span>kW</span>
-                </div>
+                <label for="coolingLoad">Abzuführende Wärmelast: <span id="coolingLoadValue">3.0</span> kW</label>
+                <input type="range" id="coolingLoad" min="1" max="6" value="3" step="0.1">
             </div>
 
             <div class="input-group">
@@ -69,14 +64,14 @@
 
         <section class="card">
             <h2>🏢 Potenzial bei Abwesenheit</h2>
-            <p class="description">An leeren Bürotagen (z.B. durch Homeoffice) soll die Heizung abgesenkt werden. Vergleichen Sie die Kosten der beiden Szenarien.</p>
+            <p class="description">An leeren Bürotagen (z.B. durch Homeoffice) soll die Heizung von 20°C auf 15°C abgesenkt werden. Vergleichen Sie die Szenarien.</p>
 
             <div class="input-group">
                 <label>Anzahl der leeren Bürotage pro Woche:</label>
                 <div id="day-selector" class="button-row">
-                    <button class="day-btn" data-days="0">0 Tage</button>
+                    <button class="day-btn active" data-days="0">0 Tage</button>
                     <button class="day-btn" data-days="1">1 Tag</button>
-                    <button class="day-btn active" data-days="2">2 Tage</button>
+                    <button class="day-btn" data-days="2">2 Tage</button>
                     <button class="day-btn" data-days="3">3 Tage</button>
                     <button class="day-btn" data-days="4">4 Tage</button>
                     <button class="day-btn" data-days="5">5 Tage</button>
@@ -91,7 +86,7 @@
         
         <section class="card">
             <h2>🖥️ Standby-Kosten-Check</h2>
-            <p class="description">Standby vermeiden ist eine klare Vorgabe. Sehen Sie, was konsequentes Abschalten Ihrer Geräte wirklich an Kosten spart.</p>
+            <p class="description">Standby vermeiden ist eine klare Vorgabe. Sehen Sie, was konsequentes Abschalten Ihrer Geräte an Kosten und CO₂ spart.</p>
             
             <div class="input-group">
                 <label for="deviceSetup">Wählen Sie Ihr Geräte-Setup:</label>
@@ -120,8 +115,8 @@
     </main>
 
     <footer>
-        <p><strong>Hinweis:</strong> Alle Berechnungen sind Schätzungen und dienen der Sensibilisierung. Die Werte basieren auf den Vorgaben der TU Dortmund.
-        <br>Annahmen: Heizkosten (Gas) 12 ct/kWh, Stromkosten 35 ct/kWh, mittlere Gebäudedämmung.
+        <p><strong>Hinweis:</strong> Alle Berechnungen sind Schätzungen. Die Werte basieren auf den Vorgaben der TU Dortmund.
+        <br>Annahmen: Heizkosten (Erdgas) 12 ct/kWh, CO₂-Faktor Erdgas: 0,2 kg/kWh. Stromkosten 35 ct/kWh, CO₂-Faktor dt. Strommix: 0,35 kg/kWh.
         </p>
     </footer>
 
