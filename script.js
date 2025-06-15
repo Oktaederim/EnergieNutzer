@@ -9,8 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
         baseCoolingTemp: 24, // Referenztemperatur für Kühlkosten
         coolingEER: 3.0, // Energy Efficiency Ratio für Klimaanlagen (realistischer Durchschnitt)
         workDaysPerYear: 220, // Arbeitstage pro Jahr
-        heatingHoursPerDay: 8,
-        coolingHoursPerDay: 10,
     };
 
     // --- DOM-ELEMENTE AUSWÄHLEN ---
@@ -41,22 +39,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const temp = parseFloat(heatingTempSlider.value);
         const size = parseInt(officeSizeSelect.value);
 
-        // Annahme: Heizbedarf pro m² (sehr vereinfacht)
-        // z.B. 70 kWh/m²/Jahr für ein durchschnittlich saniertes Bürogebäude
-        const baseYearlyKwh = size * 70;
+        const baseYearlyKwh = size * 70; // Annahme: 70 kWh/m²/Jahr
         const baseCost = baseYearlyKwh * config.heatingCostPerKwh;
-
         const tempDifference = temp - config.baseHeatingTemp;
         const costDifference = baseCost * tempDifference * config.heatingSavingPerDegree;
 
         heatingTempValue.textContent = temp.toFixed(1);
 
-        if (costDifference > 0) {
+        if (costDifference > 0.01) {
             heatingResultDiv.innerHTML = `Mehrkosten: <span class="text-danger">+${formatCurrency(costDifference)} / Jahr</span>`;
-        } else if (costDifference < 0) {
-            heatingResultDiv.innerHTML = `Ersparnis: <span class="text-success">${formatCurrency(costDifference)} / Jahr</span>`;
+        } else if (costDifference < -0.01) {
+            // KORREKTUR: Zeige Ersparnis als positive Zahl an, indem der negative Wert umgekehrt wird.
+            heatingResultDiv.innerHTML = `Ersparnis: <span class="text-success">${formatCurrency(Math.abs(costDifference))} / Jahr</span>`;
         } else {
-            heatingResultDiv.innerHTML = 'Keine Abweichung';
+            heatingResultDiv.innerHTML = 'Keine wesentliche Abweichung';
         }
     }
 
@@ -69,12 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Vereinfachte Annahme: Je kälter, desto mehr Energie wird benötigt
         const tempFactor = 1 + (config.baseCoolingTemp - temp) * 0.1; // 10% mehr Energie pro Grad unter 24°C
-        
         const kwhPerHour = (load / config.coolingEER) * tempFactor;
         const costPerHour = kwhPerHour * config.electricityCostPerKwh;
-        const costPerDay = costPerHour * config.coolingHoursPerDay;
+        const costPerDay = costPerHour * 10; // Annahme 10h Laufzeit/Tag
         const costPerYear = costPerDay * config.workDaysPerYear;
 
         coolingTempValue.textContent = temp;
@@ -83,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function calculateHomeOffice() {
         const days = parseInt(homeofficeDaysSlider.value);
-        const size = parseInt(officeSizeSelect.value); // Nutzen Bürogröße aus Modul 1
+        const size = parseInt(officeSizeSelect.value);
         
         homeofficeDaysValue.textContent = days;
 
@@ -97,11 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const baseKwhPerDay = (size * 70) / config.workDaysPerYear;
         const costPerDayFull = baseKwhPerDay * config.heatingCostPerKwh;
-        
-        // Annahme: Absenkung auf 16°C spart ca. 30% gegenüber 21°C
-        const costPerDayReduced = costPerDayFull * (1 - (5 * config.heatingSavingPerDegree));
-        
-        const yearlySavings = (costPerDayFull - costPerDayReduced) * days * (52); // 52 Wochen
+        const costPerDayReduced = costPerDayFull * (1 - ((21 - 16) * config.heatingSavingPerDegree)); // Absenkung von 21 auf 16 Grad
+        const dailySavings = costPerDayFull - costPerDayReduced;
+        const yearlySavings = dailySavings * days * 52; // 52 Wochen/Jahr
 
         if (isHeatingReduced) {
             homeofficeResultDiv.innerHTML = `Ersparnis: <span class="text-success">+${formatCurrency(yearlySavings)} / Jahr</span>`;
@@ -110,30 +102,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     // --- HILFSFUNKTIONEN ---
     function formatCurrency(value) {
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
     }
 
     // --- EVENT LISTENERS ---
-    heatingTempSlider.addEventListener('input', calculateHeating);
-    officeSizeSelect.addEventListener('input', () => {
+    // Stellt sicher, dass alle Elemente existieren, bevor Listener hinzugefügt werden
+    if (heatingTempSlider) heatingTempSlider.addEventListener('input', calculateHeating);
+    if (officeSizeSelect) officeSizeSelect.addEventListener('input', () => {
         calculateHeating();
-        calculateHomeOffice(); // Neuberechnung, da Größe sich ändert
+        calculateHomeOffice();
     });
 
-    coolingLoadInput.addEventListener('input', calculateCooling);
-    coolingTempSlider.addEventListener('input', calculateCooling);
+    if (coolingLoadInput) coolingLoadInput.addEventListener('input', calculateCooling);
+    if (coolingTempSlider) coolingTempSlider.addEventListener('input', calculateCooling);
 
-    homeofficeDaysSlider.addEventListener('input', calculateHomeOffice);
-    heatingOnBtn.addEventListener('click', () => {
+    if (homeofficeDaysSlider) homeofficeDaysSlider.addEventListener('input', calculateHomeOffice);
+    if (heatingOnBtn) heatingOnBtn.addEventListener('click', () => {
         isHeatingReduced = false;
         heatingOnBtn.classList.add('active');
         heatingOffBtn.classList.remove('active');
         calculateHomeOffice();
     });
-    heatingOffBtn.addEventListener('click', () => {
+    if (heatingOffBtn) heatingOffBtn.addEventListener('click', () => {
         isHeatingReduced = true;
         heatingOffBtn.classList.add('active');
         heatingOnBtn.classList.remove('active');
@@ -141,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- INITIALISIERUNG ---
-    // Alle Berechnungen beim Laden der Seite einmal ausführen
     calculateHeating();
     calculateCooling();
     calculateHomeOffice();
