@@ -40,16 +40,14 @@ header {
     color: white;
     text-align: center;
     padding: 1.5rem 1rem;
-    position: relative;
 }
 
 header h1 { margin: 0; font-size: 2.5rem; }
 
+/* GEÄNDERT: Reset-Button ist nun zentral unter dem Text */
 .reset-button {
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-    padding: 0.5rem 1rem;
+    margin-top: 1rem;
+    padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
     font-weight: 700;
     background-color: #ffc107;
@@ -58,12 +56,10 @@ header h1 { margin: 0; font-size: 2.5rem; }
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s;
+    display: inline-block;
 }
 .reset-button:hover { background-color: #ffca2c; }
 
-@media (max-width: 600px) {
-    .reset-button { position: static; margin-top: 1rem; display: inline-block; width: auto; }
-}
 
 .card {
     background-color: var(--card-bg);
