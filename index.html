@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Energie-Kompass Öffentliche Verwaltung</title>
+    <title>Energie-Kompass TU Dortmund</title>
     
     <link rel="stylesheet" href="style.css">
     
@@ -14,14 +14,15 @@
 <body>
 
     <header>
-        <h1>💡 Energie-Kompass</h1>
+        <h1>💡 Energie-Kompass TU Dortmund</h1>
         <p>Ein interaktives Werkzeug zur Visualisierung von Energiekosten im Büro</p>
+        <button id="resetBtn" class="reset-button">🔄 Auf TU-Standard zurücksetzen</button>
     </header>
 
     <main class="container">
         <section class="card">
             <h2>🌡️ Heizkosten im Büro</h2>
-            <p class="description">Jedes Grad weniger spart ca. 6% Heizenergie. Sehen Sie hier, was Ihre Wunschtemperatur für die jährlichen Kosten bedeutet.</p>
+            <p class="description">Die TU-Vorgabe für Büros ist 20°C. Jedes Grad Abweichung beeinflusst die Heizkosten. Sehen Sie hier, wie sich das auswirkt.</p>
             
             <div class="input-group">
                 <label for="officeSize">Wählen Sie Ihre Bürogröße:</label>
@@ -33,19 +34,19 @@
             </div>
 
             <div class="input-group">
-                <label for="heatingTemp">Ihre gewünschte Raumtemperatur: <span id="heatingTempValue">21</span>°C</label>
-                <input type="range" id="heatingTemp" min="19" max="24" value="21" step="0.5">
+                <label for="heatingTemp">Ihre gewünschte Raumtemperatur: <span id="heatingTempValue">20</span>°C</label>
+                <input type="range" id="heatingTemp" min="18" max="23" value="20" step="0.5">
             </div>
 
             <div class="result">
-                <p>Im Vergleich zu empfohlenen 20°C:</p>
+                <p>Abweichung von der TU-Vorgabe (20°C):</p>
                 <div id="heatingResult" class="cost-display"></div>
             </div>
         </section>
 
         <section class="card">
             <h2>❄️ Kühlkosten für Technikräume</h2>
-            <p class="description">Kühlung ist energieintensiv. Sehen Sie die Kosten und das Sparpotenzial durch eine höhere Solltemperatur.</p>
+            <p class="description">Das ITMC hebt die Temperatur für die Serverkühlung schrittweise an (aktuell 24°C). Sehen Sie die Auswirkung jeder Anpassung.</p>
 
             <div class="input-group">
                 <label for="coolingLoad">Abzuführende Wärmelast (z.B. Server):</label>
@@ -56,8 +57,8 @@
             </div>
 
             <div class="input-group">
-                <label for="coolingTemp">Gewünschte Raumtemperatur: <span id="coolingTempValue">22</span>°C</label>
-                <input type="range" id="coolingTemp" min="18" max="26" value="22" step="1">
+                <label for="coolingTemp">Gewünschte Raumtemperatur: <span id="coolingTempValue">24</span>°C</label>
+                <input type="range" id="coolingTemp" min="20" max="28" value="24" step="1">
             </div>
 
             <div class="result">
@@ -68,11 +69,12 @@
 
         <section class="card">
             <h2>🏢 Potenzial bei Abwesenheit</h2>
-            <p class="description">Sehen Sie, wie viel Heizkosten eine bewusste Absenkung an unbesetzten Tagen (z.B. durch Homeoffice) einspart.</p>
+            <p class="description">An leeren Bürotagen (z.B. durch Homeoffice) soll die Heizung abgesenkt werden. Vergleichen Sie die Kosten der beiden Szenarien.</p>
 
             <div class="input-group">
                 <label>Anzahl der leeren Bürotage pro Woche:</label>
                 <div id="day-selector" class="button-row">
+                    <button class="day-btn" data-days="0">0 Tage</button>
                     <button class="day-btn" data-days="1">1 Tag</button>
                     <button class="day-btn active" data-days="2">2 Tage</button>
                     <button class="day-btn" data-days="3">3 Tage</button>
@@ -89,14 +91,14 @@
         
         <section class="card">
             <h2>🖥️ Standby-Kosten-Check</h2>
-            <p class="description">Ein ungenutzter, aber nicht abgeschalteter PC kann erhebliche Stromkosten verursachen. Finden Sie Ihr Sparpotenzial!</p>
+            <p class="description">Standby vermeiden ist eine klare Vorgabe. Sehen Sie, was konsequentes Abschalten Ihrer Geräte wirklich an Kosten spart.</p>
             
             <div class="input-group">
                 <label for="deviceSetup">Wählen Sie Ihr Geräte-Setup:</label>
                 <select id="deviceSetup">
                     <option value="pc_2_monitors">PC + 2 Monitore</option>
                     <option value="pc_1_monitor">PC + 1 Monitor</option>
-                    <option value="laptop_monitor">Laptop + 1 Monitor</option>
+                    <option value="laptop_monitor" selected>Laptop + 1 Monitor</option>
                     <option value="laptop">Nur Laptop</option>
                 </select>
             </div>
@@ -118,8 +120,8 @@
     </main>
 
     <footer>
-        <p><strong>Hinweis:</strong> Alle Berechnungen sind Schätzungen und dienen der Sensibilisierung.
-        <br>Annahmen: Heizkosten 12 ct/kWh, Stromkosten 35 ct/kWh, mittlere Gebäudedämmung.
+        <p><strong>Hinweis:</strong> Alle Berechnungen sind Schätzungen und dienen der Sensibilisierung. Die Werte basieren auf den Vorgaben der TU Dortmund.
+        <br>Annahmen: Heizkosten (Gas) 12 ct/kWh, Stromkosten 35 ct/kWh, mittlere Gebäudedämmung.
         </p>
     </footer>
 
