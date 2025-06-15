@@ -27,39 +27,38 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const resetBtn = document.getElementById('resetBtn');
-    // Modul 1
     const heatingOfficeSizeSelector = document.getElementById('heating-office-size-selector');
     const heatingTempSlider = document.getElementById('heatingTemp');
     const heatingTempValue = document.getElementById('heatingTempValue');
     const heatingResultDiv = document.getElementById('heatingResult');
-    // Modul 2
     const coolingLoadSlider = document.getElementById('coolingLoad');
     const coolingLoadValue = document.getElementById('coolingLoadValue');
     const coolingTempSlider = document.getElementById('coolingTemp');
     const coolingTempValue = document.getElementById('coolingTempValue');
     const coolingResultDiv = document.getElementById('coolingResult');
-    // Modul 3
     const absenceOfficeSizeSelector = document.getElementById('absence-office-size-selector');
     const daySelector = document.getElementById('day-selector');
     const absenceResultDiv = document.getElementById('absenceResult');
-    // Modul 4
     const pcQuantitySelector = document.getElementById('pc-quantity-selector');
     const laptopQuantitySelector = document.getElementById('laptop-quantity-selector');
     const monitorQuantitySelector = document.getElementById('monitor-quantity-selector');
     const shutdownBehaviorGroup = document.getElementById('shutdown-behavior');
     const standbyResultDiv = document.getElementById('standbyResult');
 
+    // --- HILFSFUNKTIONEN (korrekt am Anfang platziert) ---
     function formatCurrency(value) {
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
     }
     
     function setActiveButton(groupElement, dataAttribute, value) {
+        if (!groupElement) return;
         groupElement.querySelectorAll('button').forEach(btn => {
             btn.classList.remove('active');
             if (btn.dataset[dataAttribute] == value) btn.classList.add('active');
         });
     }
 
+    // --- BERECHNUNGSFUNKTIONEN ---
     function calculateHeating() {
         const temp = parseFloat(heatingTempSlider.value);
         heatingTempValue.textContent = temp.toFixed(1);
@@ -125,7 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const baseKwhPerDay = (size * 70) / config.workDaysPerYear;
-        const kwhSavingPerDay = baseKwhPerDay * ((20 - 15) * config.heatingSavingPerDegree);
+        // Absenkung von 20 auf 15 Grad = 5 Grad Differenz
+        const kwhSavingPerDay = baseKwhPerDay * (5 * config.heatingSavingPerDegree);
         const yearlyKwhSavings = kwhSavingPerDay * days * 52;
         
         const costSavings = yearlyKwhSavings * config.heatingCostPerKwh;
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (behavior !== 'shutdown_breaks') {
             const kwhForBestBehavior = getYearlyKwh('shutdown_breaks');
             const costSaving = (kwhForBehavior - kwhForBestBehavior) * config.electricityCostPerKwh;
-            if (costSaving > 0) {
+            if (costSaving > 0.01) {
                  diffHtml = `<span class="difference text-success">(Sparpotenzial: ${formatCurrency(costSaving)})</span>`;
             }
         }
@@ -233,10 +233,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    pcQuantitySelector.addEventListener('click', (e) => { if(e.target.classList.contains('quantity-btn')) { setActiveButton(pcQuantitySelector, 'quantity', e.target.dataset.quantity); calculateStandby(); }});
-    laptopQuantitySelector.addEventListener('click', (e) => { if(e.target.classList.contains('quantity-btn')) { setActiveButton(laptopQuantitySelector, 'quantity', e.target.dataset.quantity); calculateStandby(); }});
-    monitorQuantitySelector.addEventListener('click', (e) => { if(e.target.classList.contains('quantity-btn')) { setActiveButton(monitorQuantitySelector, 'quantity', e.target.dataset.quantity); calculateStandby(); }});
-    shutdownBehaviorGroup.addEventListener('click', (e) => { if (e.target.classList.contains('behavior-btn')) { setActiveButton(shutdownBehaviorGroup, 'behavior', e.target.dataset.behavior); calculateStandby(); }});
+    const quantitySelectors = [pcQuantitySelector, laptopQuantitySelector, monitorQuantitySelector];
+    quantitySelectors.forEach(selector => {
+        selector.addEventListener('click', (e) => {
+            if (e.target.classList.contains('quantity-btn')) {
+                setActiveButton(selector, 'quantity', e.target.dataset.quantity);
+                calculateStandby();
+            }
+        });
+    });
+    
+    shutdownBehaviorGroup.addEventListener('click', (e) => { 
+        if (e.target.classList.contains('behavior-btn')) { 
+            setActiveButton(shutdownBehaviorGroup, 'behavior', e.target.dataset.behavior); 
+            calculateStandby(); 
+        }
+    });
 
+    // --- INITIALISIERUNG ---
     resetToDefaults();
 });
