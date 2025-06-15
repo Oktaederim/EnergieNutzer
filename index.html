@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Büro-Heizkostenrechner</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+      max-width: 600px;
+      margin: auto;
+    }
+    .output {
+      margin-top: 1em;
+      font-size: 1.2em;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Heizkosten im Büro</h1>
+  <p>Stelle die gewünschte Raumtemperatur ein:</p>
+
+  <label for="temp">Raumtemperatur: <span id="temp-value">20</span> °C</label>
+  <input type="range" id="temp" min="18" max="22" step="0.1" value="20">
+
+  <div class="output">
+    <p><strong>Energieverbrauch:</strong> <span id="verbrauch">10.000</span> kWh/Jahr</p>
+    <p><strong>Heizkosten:</strong> <span id="kosten">1.000</span> € pro Jahr</p>
+  </div>
+
+  <script>
+    const tempSlider = document.getElementById('temp');
+    const tempValue = document.getElementById('temp-value');
+    const verbrauch = document.getElementById('verbrauch');
+    const kosten = document.getElementById('kosten');
+
+    const grundVerbrauch = 10000; // kWh pro Jahr bei 20°C
+    const preisProKWh = 0.10; // Euro
+
+    function updateValues() {
+      const temp = parseFloat(tempSlider.value);
+      tempValue.textContent = temp.toFixed(1);
+
+      // Verbrauchsänderung: ca. ±6 % pro °C
+      const delta = temp - 20;
+      const faktor = 1 + (delta * 0.06);
+      const aktuellerVerbrauch = grundVerbrauch * faktor;
+      const aktuelleKosten = aktuellerVerbrauch * preisProKWh;
+
+      verbrauch.textContent = aktuellerVerbrauch.toFixed(0);
+      kosten.textContent = aktuelleKosten.toFixed(0);
+    }
+
+    tempSlider.addEventListener('input', updateValues);
+    updateValues(); // Initiale Werte setzen
+  </script>
+
+</body>
+</html>
